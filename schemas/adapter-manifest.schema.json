@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/adapter-manifest.schema.json",
+  "title": "Adapter manifest",
+  "description": "Declares what an adapter is, what it reports, and every action it may be asked to perform. Draft; see docs/adr/002-adapter-contract.md.",
+  "type": "object",
+  "required": ["name", "version", "domain", "tier", "health"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Unique adapter name, lowercase with hyphens."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Adapter version (semver)."
+    },
+    "contract": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Adapter contract version this manifest targets."
+    },
+    "domain": {
+      "type": "string",
+      "enum": ["ai", "hosting", "home", "monitoring", "workflows", "data", "network", "identity", "notifications"],
+      "description": "Capability area the adapter belongs to."
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["link", "observe", "control"],
+      "description": "Highest integration tier the adapter uses."
+    },
+    "reports": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "uniqueItems": true,
+      "description": "Inventory kinds this adapter keeps up to date."
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "permission", "risk"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "description": { "type": "string" },
+          "permission": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$",
+            "description": "Permission required to call this action, for example hosting.restart."
+          },
+          "risk": {
+            "type": "string",
+            "enum": ["read", "reversible", "destructive", "privileged"],
+            "description": "Risk level used by policy to decide confirmation and approval."
+          },
+          "input_schema": { "type": "string", "description": "Relative path to a JSON Schema for the action input." }
+        }
+      },
+      "description": "Every action Factotum may ask the adapter to perform. An undeclared action is rejected."
+    },
+    "events": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "publishes": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9.-]*$" },
+          "uniqueItems": true
+        },
+        "consumes": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9.-]*$" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "secrets": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "uniqueItems": true,
+      "description": "Names of secrets the adapter needs. Values are delivered at call time and never stored in the manifest."
+    },
+    "health": {
+      "type": "string",
+      "pattern": "^/",
+      "description": "Path of the health-check endpoint."
+    },
+    "config_schema": {
+      "type": "string",
+      "description": "Relative path to a JSON Schema describing the adapter's configuration."
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tile": {
+          "type": "object",
+          "required": ["title", "link"],
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string" },
+            "link": { "type": "string" }
+          }
+        },
+        "widgets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

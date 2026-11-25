@@ -1,0 +1,19 @@
+# dependencies and builds
+node_modules/
+dist/
+.next/
+coverage/
+
+# secrets and local config (secrets are managed with SOPS and age, never committed in plain text)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+age.key
+secrets.dec.*
+
+# local data
+*.sqlite
+*.log
+.DS_Store
