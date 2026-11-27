@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, NotFoundException, Injectable, UnauthorizedException } from '@nestjs/common';
 import type pg from 'pg';
 import {
   AdapterHealthReportSchema,
@@ -108,6 +108,46 @@ export class AdaptersService {
     if (!adapter.scopes.includes(HEALTH_REPORT_SCOPE)) throw new UnauthorizedException();
     const report = parseBody(AdapterHealthReportSchema, body);
     return toSummary(await this.repo.recordHealth(adapter.id, report.status, report.detail ?? null));
+  }
+
+  /** Looks an adapter up by name (used by the action queue to read its declared actions). */
+  find(name: string): Promise<AdapterRecord | undefined> {
+    return this.repo.findByName(name);
+  }
+
+  /**
+   * Replaces a registered adapter's manifest and scopes, keeping its token. Owner only. Risk: privileged, because
+   * the manifest fixes each action's risk level. Needed when an adapter gains actions (LT-13).
+   */
+  async updateManifest(name: string, body: unknown): Promise<AdapterSummary> {
+    const base = (outcome: NewActivity['outcome'], details: Record<string, unknown>): NewActivity => ({
+      actorType: 'owner',
+      actorId: 'owner',
+      action: 'adapter.manifest.update',
+      risk: 'privileged',
+      targetType: 'adapter',
+      targetId: name,
+      outcome,
+      details,
+    });
+    const result = validateManifest(body);
+    if (!result.ok) {
+      await this.activity.record(base('denied', { errors: result.errors }));
+      throw new BadRequestException({ message: 'invalid adapter manifest', errors: result.errors });
+    }
+    const existing = await this.repo.findByName(name);
+    if (!existing) throw new NotFoundException(`adapter ${name} is not registered`);
+    if (result.manifest.name !== name) throw new BadRequestException('manifest name does not match the adapter');
+    const scopes = scopesForManifest(result.manifest);
+    const row = await this.repo.updateManifest(existing.id, result.manifest, scopes);
+    await this.activity.record(
+      base('success', {
+        version: result.manifest.version,
+        actions: (result.manifest.actions ?? []).map((a) => `${a.name}:${a.risk}`),
+        previousActions: (existing.manifest.actions ?? []).map((a) => `${a.name}:${a.risk}`),
+      }),
+    );
+    return toSummary(row);
   }
 
   /** Owner view of every registered adapter. Risk: read. */

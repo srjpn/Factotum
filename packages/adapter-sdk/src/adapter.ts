@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import {
+  ActionClaimSchema,
   AdapterRegistrationSchema,
   InventorySyncResultSchema,
   validateManifest,
+  type ActionRun,
+  type ActionResultReport,
   type AdapterManifest,
   type AdapterHealthReport,
   type InventorySyncResult,
@@ -25,6 +28,8 @@ export interface AdapterOptions {
   /** Called on every health interval. A throw is reported as `down`. */
   healthCheck?: () => Promise<AdapterHealthReport> | AdapterHealthReport;
   healthIntervalMs?: number;
+  /** Seconds between polls for queued write actions, in ms (default 5000). Polling runs only if a handler is registered. */
+  actionPollMs?: number;
   backoff?: BackoffOptions;
   /** Attempts per sync before giving up (default 5). */
   maxAttempts?: number;
@@ -33,6 +38,9 @@ export interface AdapterOptions {
   log?: (message: string) => void;
   fetch?: typeof fetch;
 }
+
+/** Runs one write action. Return a short `detail` (no secrets, no tool payloads); throw to report a failure. */
+export type ActionHandler = (params: Record<string, unknown>, run: ActionRun) => Promise<{ detail?: string } | void>;
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
@@ -48,6 +56,8 @@ export class FactoAdapter {
   private token: string | undefined;
   private readonly abort = new AbortController();
   private loop: Promise<void> | undefined;
+  private actionLoop: Promise<void> | undefined;
+  private readonly handlers = new Map<string, ActionHandler>();
   private readonly doFetch: typeof fetch;
   private readonly backoff: BackoffOptions;
   private readonly log: (m: string) => void;
@@ -74,6 +84,57 @@ export class FactoAdapter {
       this.log('registered; service token stored');
     }
     this.loop = this.healthLoop();
+    if (this.handlers.size > 0) this.actionLoop = this.pollActions();
+  }
+
+  /**
+   * Registers the handler for one action declared in the manifest (LT-13). The core queues runs; this adapter polls
+   * for them with its own token, runs the handler and reports the outcome. Register before `start()`.
+   */
+  onAction(name: string, handler: ActionHandler): void {
+    if (!(this.opts.manifest.actions ?? []).some((a) => a.name === name)) {
+      throw new Error(`action ${name} is not declared in the manifest`);
+    }
+    this.handlers.set(name, handler);
+  }
+
+  /** Claims and runs at most one queued action. Returns false when nothing was queued. Exposed for tests. */
+  async runNextAction(): Promise<boolean> {
+    const { run } = await this.request('POST', '/adapters/actions/claim', {}, this.requireToken(), ActionClaimSchema, 1);
+    if (!run) return false;
+    const handler = this.handlers.get(run.action);
+    let report: ActionResultReport;
+    if (!handler) {
+      report = { outcome: 'failure', detail: 'adapter has no handler for this action' };
+    } else {
+      try {
+        const out = await handler(run.params, run);
+        report = { outcome: 'success', ...(out?.detail ? { detail: out.detail.slice(0, 500) } : {}) };
+      } catch (err) {
+        report = { outcome: 'failure', detail: (err as Error).message.slice(0, 500) };
+      }
+    }
+    // The action has already run; losing the report would leave the run `running` until the core times it out.
+    await this.request('POST', `/adapters/actions/${encodeURIComponent(run.id)}/result`, report, this.requireToken(), z.unknown(), this.opts.maxAttempts ?? 5);
+    return true;
+  }
+
+  private async pollActions(): Promise<void> {
+    const interval = this.opts.actionPollMs ?? 5_000;
+    let failures = 0;
+    await sleep(interval, this.abort.signal); // first poll after one interval, not at registration
+    while (!this.abort.signal.aborted) {
+      let more = false;
+      try {
+        more = await this.runNextAction();
+        failures = 0;
+      } catch (err) {
+        if (err instanceof AuthError) return; // the health loop reports this and stops the adapter
+        failures++;
+        this.log(`action poll failed: ${(err as Error).message}`);
+      }
+      if (!more) await sleep(failures ? backoffDelay(failures, this.backoff) : interval, this.abort.signal);
+    }
   }
 
   /** Replaces the core's snapshot of `kind` for this adapter. Retries transient failures with backoff. */
@@ -86,7 +147,7 @@ export class FactoAdapter {
   /** Stops the health loop and cancels waiting retries. */
   async stop(): Promise<void> {
     this.abort.abort();
-    await this.loop;
+    await Promise.all([this.loop, this.actionLoop]);
   }
 
   private requireToken(): string {

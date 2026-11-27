@@ -28,6 +28,12 @@ export interface JiraIssue {
   };
 }
 
+export interface JiraTransition {
+  id: string;
+  name: string;
+  to?: { name?: string };
+}
+
 interface SearchPage {
   issues?: JiraIssue[];
   nextPageToken?: string;
@@ -49,7 +55,7 @@ const MAX_WAIT_MS = 60_000;
 const MAX_PAGES = 500; // guard against a server that never says it is last
 export const FIELDS = ['summary', 'status', 'assignee', 'updated', 'project'];
 
-/** Read-only Jira Cloud client (REST v3 enhanced search). Credentials travel only in the Authorization header. */
+/** Jira Cloud client (REST v3). Reads via enhanced search; writes only issue transitions (LT-13). Credentials travel only in the Authorization header. */
 export class JiraClient {
   private readonly doFetch: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
@@ -66,13 +72,17 @@ export class JiraClient {
     return this.authHeader;
   }
 
-  private async post(body: unknown): Promise<SearchPage> {
+  private post(body: unknown): Promise<SearchPage> {
+    return this.call<SearchPage>('POST', '/rest/api/3/search/jql', body);
+  }
+
+  private async call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
     const retries = this.opts.maxRetries ?? 3;
     for (let attempt = 0; ; attempt++) {
-      const res = await this.doFetch(`${this.opts.baseUrl}/rest/api/3/search/jql`, {
-        method: 'POST',
+      const res = await this.doFetch(`${this.opts.baseUrl}${path}`, {
+        method,
         headers: { authorization: this.authHeader, accept: 'application/json', 'content-type': 'application/json' },
-        body: JSON.stringify(body),
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
       if (res.status === 401 || res.status === 403) throw new JiraAuthError(res.status);
       if (res.status === 429) {
@@ -83,8 +93,20 @@ export class JiraClient {
         continue;
       }
       if (!res.ok) throw new JiraHttpError(res.status);
-      return (await res.json()) as SearchPage;
+      if (res.status === 204) return undefined as T;
+      return (await res.json()) as T;
     }
+  }
+
+  /** Transitions the issue can take now, with the status each one leads to. */
+  async transitions(key: string): Promise<JiraTransition[]> {
+    const res = await this.call<{ transitions?: JiraTransition[] }>('GET', `/rest/api/3/issue/${encodeURIComponent(key)}/transitions`);
+    return res.transitions ?? [];
+  }
+
+  /** Performs one transition by id. Sends no field updates and no comment. */
+  async transition(key: string, transitionId: string): Promise<void> {
+    await this.call('POST', `/rest/api/3/issue/${encodeURIComponent(key)}/transitions`, { transition: { id: transitionId } });
   }
 
   /** Runs a JQL search and follows nextPageToken until the last page. */
