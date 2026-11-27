@@ -3,6 +3,7 @@ FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY schemas schemas
 COPY packages/contracts packages/contracts
 COPY apps/api apps/api
 RUN pnpm install --frozen-lockfile --filter @facto/api...

@@ -2,7 +2,9 @@
   "name": "@facto/contracts",
   "version": "0.0.0",
   "private": true,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,11 +15,13 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "build": "node scripts/sync-schema.mjs && tsc -p tsconfig.json",
+    "typecheck": "node scripts/sync-schema.mjs && tsc -p tsconfig.json --noEmit",
+    "test": "node scripts/sync-schema.mjs && vitest run",
+    "sync-schema": "node scripts/sync-schema.mjs"
   },
   "dependencies": {
+    "ajv": "^8.20.0",
     "zod": "^4.6.7"
   }
 }
