@@ -40,14 +40,9 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 
 ## LT-5 notes
 
-Status: built on `claude/lt-5-adapter-registration-d6e52a`; waiting on LT-3 for the wiring below. API shape is in [adapter-contract.md](../architecture/adapter-contract.md).
+Status: done, built on LT-3. API shape is in [adapter-contract.md](../architecture/adapter-contract.md). Registration and health are covered by unit tests and by `adapters.integration.test.ts` against real Postgres (`FACTO_TEST_DATABASE_URL`).
 
-To wire when LT-3 lands:
-
-- Bind `ACTIVITY_RECORDER` in `apps/api/src/adapters/adapters.module.ts` to an adapter over LT-3's `ActivityService.record()` (the in-memory recorder is not durable).
-- Bind `ADAPTER_REPOSITORY` to `PgAdapterRepository` with LT-3's pool, and make sure `002_adapters.sql` runs after `001`.
-- Move `FACTO_ADAPTER_ADMIN_TOKEN` into `config.ts`, `.env.example` and `docker-compose.yml`. Replace it with LT-3's owner auth if that exists.
-
+## Suggested order
 
 1. LT-1, LT-2, LT-3.
 2. LT-4 and LT-5 in either order. After them LT-6 can start in parallel.
