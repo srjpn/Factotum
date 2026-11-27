@@ -20,6 +20,14 @@ export class AdaptersController {
     return this.adapters.updateManifest(name, body);
   }
 
+  /** Owner only: invalidate the adapter's token and issue a new one (shown once). Risk: destructive. */
+  @Post(':name/reset')
+  @HttpCode(200)
+  @UseGuards(AdminGuard)
+  reset(@Param('name') name: string): Promise<AdapterRegistration> {
+    return this.adapters.resetToken(name);
+  }
+
   /** Called by the adapter itself with its service token. */
   @Post('health')
   @HttpCode(200)

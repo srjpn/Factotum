@@ -11,6 +11,9 @@ const paths = {
   robot: 'M5 8h14v10H5zM12 4v4M9 13h.01M15 13h.01M3 12v3M21 12v3',
   board: 'M4 4h16v16H4zM9 4v16M15 4v10',
   plug: 'M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4',
+  disk: 'M4 7a8 3 0 0 1 16 0v10a8 3 0 0 1-16 0zM4 7a8 3 0 0 0 16 0M4 12a8 3 0 0 0 16 0',
+  server: 'M3 4h18v6H3zM3 14h18v6H3zM7 7h.01M7 17h.01',
+  box: 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10',
   list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
 } as const;
 

@@ -38,8 +38,28 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-15 | Docker adapter | LT-5 | Lists local containers with health and supports restart as a reversible action. **Status: read-only listing done and checked against the local Docker ([runbook](../runbooks/docker-adapter.md)); restart arrives with LT-11** | P2 (Docker adapter) |
 | LT-16 | Notifications | LT-3 | Events such as run finished, run failed, node offline and battery low are sent through ntfy | P4 (ntfy) |
 | LT-17 | Extras | LT-5 | Any of: open PRs and CI state, AI usage and cost, Time Machine status, local dev servers. Each is its own adapter with its own acceptance criteria written when picked | none |
+| | | | **LT-17c (AI usage and cost): see [notes](#lt-17c-notes-ai-usage-and-cost-claude-code-adapter)** | |
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
+
+> LT-17 notes (2026-11-27): picked two extras that need no credentials and read only local state. Each is its own adapter on the SDK, host process, privacy class `personal`, tier `observe`, no actions.
+>
+> **Time Machine (`adapters/timemachine`, kind `backup`).** Acceptance:
+> 1. One `backup` item: last backup time, whether a backup is running, whether the destination is reachable, status `ok`, `running`, `stale` (older than `TIMEMACHINE_STALE_HOURS`, default 48) or `unavailable`.
+> 2. Uses only `tmutil latestbackup`, `tmutil status` and `tmutil destinationinfo` (read-only). Never starts, stops or changes a backup.
+> 3. If `tmutil` fails (for example no Full Disk Access), health is `degraded` with a clear detail, nothing crashes, and inventory is not deleted (no push on failure).
+> 4. Tests use fake `tmutil` output only.
+>
+> **Local dev servers (`adapters/devservers`, kind `service`).** Acceptance:
+> 1. One `service` item per listening TCP port (`lsof -nP -iTCP -sTCP:LISTEN`) bound to localhost or all interfaces; other bindings are dropped.
+> 2. Reports port, process name and working directory name (last path segment) only. Never command-line arguments or environment; `lsof` is called without `-c`/`ps`-style argument output.
+> 3. A configurable ignore list (`DEVSERVERS_IGNORE_PORTS`, `DEVSERVERS_IGNORE_PROCESSES`) removes matches; default ignores system processes and the Factotum stack's own ports are left to the owner to list.
+> 4. If `lsof` fails, health is `degraded` and nothing is pushed.
+> 5. Tests use fake `lsof` output only.
+>
+> Dashboard: no new card; both adapters appear on the Overview Adapters card with their health detail.
+>
+> Live check (2026-11-27, this branch's API on a throwaway Postgres, port 3190, because the running Compose API predates the new kinds and rejects them with 400): both adapters registered, `backup` count 1 (status `unavailable`, no mounted destination on this Mac), `service` count 41 after default and port filters. Health reads `degraded: first sync pending` until the first 30 s health report, as for Docker. Status: done; the Compose stack needs a rebuild to pick up the new kinds.
 
 > LT-12 status (2026-11-27): done on branch `claude/lt-12-privacy-e4a9f1`. `POST /privacy/check` and `PrivacyService.check` allow or deny a target per privacy class from env lists (client-data fails closed); every refusal is logged as `privacy.deny`; no fallback. See [privacy-check](../architecture/privacy-check.md). LT-13 must call it before acting. Not done: dashboard display, and wiring the check into `POST /actions/request` (no task or run context there yet).
 
@@ -48,6 +68,22 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 > LT-13 status (2026-11-27): built on branch `claude/lt-13-writes-8b1e2e`, not merged. Core: migration `006_action_runs.sql`, module `apps/api/src/actions/` (queue, claim, result, owner endpoints), `PUT /adapters/:name/manifest`; SDK `onAction`; actions `trello.move-card`, `jira.transition-issue`, `pani.start-job`, `pani.stop-job`, all `reversible`, each with request, decision, queue, start and result in the activity log. Runbook: [write-actions.md](../runbooks/write-actions.md); contract in [adapter-contract.md](../architecture/adapter-contract.md). Tested against mock Trello and Jira, Pani fixtures with a fake CLI, and real Postgres (`actions.integration.test.ts`). **Not done:** (1) never run against real Trello, Jira or Pani; (2) the LT-12 privacy check is not wired: the hook is `apps/api/src/actions/privacy-hook.ts`, a no-op until LT-12 is merged onto this line (LT-12 exists only on its own branch; call `PrivacyService.check` there, with the target name and the task's class); (3) Pani can only start an already queued job (it kicks the runner for the whole queue) and stop is cooperative, so cancelling a running job loses its in-flight chunk. Owner to decide whether `stop-job` should be `destructive` (needing approval); (4) adapters registered before LT-13 need the one-time manifest update; (5) no dashboard UI for runs yet, only the API.
 
 > LT-19 status (2026-11-27): runbook written: [move-control-plane.md](../runbooks/move-control-plane.md). Rehearsed on one MacBook with a second Compose project (`factotum-move-test`, ports 3100/3101, fresh secrets, live stack untouched): read-only `pg_dump` of the live database restored into an empty Postgres before the API started, API and dashboard built and started on the copy, row counts equal. The real node credential and the real Jira, Pani and Docker adapter tokens authenticated against the copy (which had a different owner token), and the real node agent heartbeated to it with only `FACTO_API_URL` changed (node `online`); dashboard `/login` served. So credentials are hash-stored in the database and survive a restore, and the owner token can be regenerated. Multi-arch (`linux/amd64,linux/arm64`) build of the API image passed; the dashboard multi-arch build was interrupted when Docker was restarted on the host (not by this work) and was not re-run (the dashboard built natively on arm64). **Not proved:** a physically separate machine, Tailscale and `FACTO_BIND_ADDR` on a Tailscale IP, adapters running against the new URL, the dashboard amd64 image, and rollback was documented but not executed. No Compose or code changes were needed. Test project, volume and the dump were deleted; no real volume was touched.
+
+## LT-17c notes: AI usage and cost (Claude Code adapter)
+
+Acceptance criteria (written first):
+
+1. `adapters/claude` is a separate read-only process, registered by manifest (`ai`, `observe`), pushing `claude-session` and `claude-usage` inventory with privacy class `client-data`; settings from env only; writes only its state file.
+2. Reads Claude Code transcripts incrementally (mtime and byte offset, streamed, never a whole file). Message content, prompts, tool inputs and file paths are never read into output, stored, logged or sent; tests prove it.
+3. Reports active sessions (active within N minutes, default 10) with tokens, models, counts and times; per-day and rolling 5-hour and 7-day usage by model; session wall-clock and active time with totals for today and 7 days; context size, cache hit rate, sidechain messages, sessions per project, longest session, burn rate.
+4. Costs are labelled estimates from one price file (`src/pricing.ts`), overridable with `CLAUDE_PRICING_FILE`; the built-in prices are placeholders to keep current.
+5. Project label is the last path segment by default, a hash with `CLAUDE_HIDE_PROJECT_NAMES=true`.
+6. Snapshots are bounded: newest 100 sessions, 30 days of usage rows.
+7. The dashboard Overview has a small Claude Code card with an empty state when the adapter is absent.
+
+Status (2026-11-27): built on branch `claude/claude-adapter-3aa45c`, not merged. Runbook: [claude-adapter.md](../runbooks/claude-adapter.md). Contracts: `claude-session` and `claude-usage` in `packages/contracts/src/inventory.ts`. Unit and end-to-end tests use synthetic fixture transcripts and a mock API.
+
+Live check (counts and totals only): against the real transcript folder the adapter read 187 transcript files in about 0.8 s on the first scan and 4 ms on the next (only appended bytes). It produced 100 sessions (5 active), 24 usage rows; today 19 sessions and about 10,600 s active time; last 5 hours 16 sessions and 1,111 messages; last 7 days 117 sessions and 7,338 messages. The cost estimates use placeholder prices and are not recorded here. **Not done:** the push to the running API was refused with 400 `unsupported inventory kind` because the running stack was built before these kinds existed and was not rebuilt (as instructed); the `claude` adapter did register there, so after the API is rebuilt, run the adapter again with `FACTO_API_URL` only. The dashboard card was verified by typecheck and unit tests, not in a browser.
 
 ## LT-5 notes
 
@@ -69,6 +105,57 @@ Status: built on branch `lt-7-trello-adapter` (`adapters/trello`), read-only, te
 ## LT-11 notes
 
 Status (2026-11-27): built. Migration `005_approvals.sql`, module `apps/api/src/approvals/`, tier table `apps/api/src/policy/policy.ts`, dashboard page `/approvals`. Request, approve, deny and expire are logged; unit and integration tests (`approvals.integration.test.ts`) pass against real Postgres. Design is in [ADR-010](../adr/010-approval-policy-lite.md) (Proposed, needs owner acceptance). Not done: no action consumes an approval yet (LT-13 does), and the caller's declared risk is trusted (ADR-010 item 5). Not checked by hand in a browser.
+
+## LT-18 gate result
+
+Script: [`scripts/lite-gate.sh`](../../scripts/lite-gate.sh); manual checklist: [lite-gate.md](../runbooks/lite-gate.md). Run on 2026-11-27 (about 18:40 UTC) against the live Compose stack (API 127.0.0.1:3000, dashboard 127.0.0.1:3001) with `GATE_WRITE=1`. Result: **PASS 40, FAIL 0, SKIP 2**, exit 0. The default run (no write section) gave PASS 34, FAIL 0, SKIP 3. The script was also run against a dead API URL and exited non-zero (16 FAIL), so a failure is detected. Counts only; no titles or client content were recorded.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| api-health | PASS | `GET /health` 200 |
+| auth (6 owner GET routes, enrolment-token POST, unknown node credential on heartbeat) | PASS x8 | 401 without token and with a wrong token |
+| node-online | PASS | 1 node online, cpu, memory and disk present, heartbeat 10 s old (limit 90 s) |
+| node-battery | PASS | battery metric present |
+| activity-risk | PASS | 55 entries, all with a valid risk level |
+| node-status-logged | PASS | 1 `node.online` from `node-status-monitor`, 0 `node.offline` |
+| activity-order | PASS | ids unique and ordered |
+| activity-append-only | PASS | DELETE, PATCH, PUT on `/activity` and `/activity/1` return 404 |
+| adapters-up | PASS | 6 of 6 up: claude, devservers, docker, jira, pani, timemachine |
+| adapters-declared | PASS | every adapter has a tier and scopes |
+| inventory task | PASS | 395 (Jira only), all client-data |
+| inventory run | PASS | 32 (Pani), all client-data |
+| inventory container | PASS | 8 (Docker), personal |
+| inventory backup | PASS | 1 (Time Machine), personal |
+| inventory service | PASS | 45 (dev servers), personal |
+| inventory claude-session / claude-usage | PASS | 100 / 24, client-data |
+| privacy-jira, privacy-pani-runs, privacy-all | PASS | Jira and Pani runs client-data; all 605 items have a class |
+| privacy-trello | SKIP | no Trello tasks (live check pending credentials) |
+| no-secrets-in-output | PASS | no `facto_node_`, `facto_adp_`, `facto_enrol_` or owner token in `/activity` (500) or `/inventory` |
+| approvals-reachable | PASS | 200 |
+| privacy-policy | PASS | client-data allowed targets empty (fail closed), personal `*` |
+| dashboard-login, dashboard-auth-redirect | PASS | `/login` 200; `/` redirects to login |
+| private-by-default, compose-default-bind | PASS | published ports on 127.0.0.1 only; compose defaults to 127.0.0.1 |
+| portability-runbook | SKIP | `move-control-plane.md` not on this branch |
+| privacy-deny, privacy-deny-logged (write section) | PASS | client-data to an unlisted target refused; `privacy.deny` logged with outcome `denied` |
+| privacy-personal-allow, policy-read-allowed, policy-destructive-pending, approval-deny-logged (write section) | PASS | read allowed; destructive pending, then denied by owner |
+
+The write section left 4 to 5 probe entries in the live activity log (`gate.check`, `gate.read-probe`, `gate.destructive-probe` and its denial). The log is append-only, so they stay.
+
+### Not verified
+
+- Trello live check (needs the owner's credentials); Trello task privacy is therefore SKIP.
+- Tailscale, and a real second machine: the Phase 0 roadmap gate is not passed by this.
+- Node offline detection was not exercised by this run (the agent was not stopped); the script only proves `node-status-monitor` logs. The stop and restart test is a manual item in the checklist.
+- Write actions (`pani.start-job`, `trello.move-card`, `jira.transition-issue`) against real services; the probes use only `gate.*` names and never run an adapter action.
+- LT-19 move runbook (not on this branch); LT-14 Pulse (dropped by the owner, not built).
+- ntfy delivery, dashboard pages by eye (approvals, tasks, activity), and the owner login with a wrong password.
+- Owner acceptance of ADR-009, ADR-010 and the other Proposed ADRs; the Pulse question.
+- The Docker adapter's `restart` action, battery-low and run-finished notifications (not built).
+- `POST /privacy/check` is not wired into `POST /actions/request` or `/actions/run` (LT-12 note), so no run is refused by privacy yet; only the decision call is proven.
+
+### Open issues
+
+None from the script (0 FAIL). Observations for the owner: the `client-data` allowed list is empty on this stack, so any client-data run would be refused until `FACTO_PRIVACY_CLIENT_DATA_TARGETS` is set; and the activity log holds only 55 entries because the stack was recreated (older entries are in the previous database state, not checked).
 
 ## Suggested order
 

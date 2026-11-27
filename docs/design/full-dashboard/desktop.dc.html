@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Facto command centre</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090D}
+*{box-sizing:border-box}
+.app{font-family:'Inter',system-ui,sans-serif;color:#E8ECF3;background:#07090D;min-height:100%;display:flex;flex-wrap:wrap;position:relative;overflow:hidden}
+.glow{position:absolute;top:-220px;left:30%;width:900px;height:520px;background:radial-gradient(closest-side,rgba(139,124,255,.22),rgba(53,224,208,.07) 60%,transparent);pointer-events:none}
+.side{flex:0 0 232px;padding:24px 16px;display:flex;flex-direction:column;gap:4px;border-right:1px solid rgba(255,255,255,.06);background:rgba(10,13,19,.8);position:relative}
+.main{flex:999 1 760px;min-width:0;padding:20px 32px 48px;position:relative;display:flex;flex-direction:column;gap:20px}
+.h{font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em}
+.mono{font-family:'JetBrains Mono',monospace}
+.sec{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8C98AB;margin:18px 10px 6px}
+.nav{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;color:#A9B4C6;font-size:14px;text-decoration:none;border:0;background:transparent;font-family:inherit;cursor:pointer;width:100%;text-align:left}
+.nav:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav.on{background:linear-gradient(90deg,rgba(139,124,255,.22),rgba(139,124,255,.05));color:#fff}
+.nav .n{margin-left:auto;font-size:11px;padding:1px 7px;border-radius:99px;background:rgba(255,181,71,.16);color:#FFC46B}
+.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.card{background:linear-gradient(180deg,#121823,#0E1219);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px 20px;position:relative;min-width:0}
+.card h3{margin:0;font-size:15px;font-weight:600;font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sub{font-size:12px;color:#93A0B4}
+.pill{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.ok{background:rgba(61,220,151,.13);color:#53E3A8}
+.wa{background:rgba(255,181,71,.14);color:#FFC46B}
+.bd{background:rgba(255,107,122,.14);color:#FF8F9B}
+.in{background:rgba(139,124,255,.18);color:#B5ABFF}
+.cy{background:rgba(53,224,208,.13);color:#5BEADB}
+.ne{background:rgba(255,255,255,.07);color:#B6C0D0}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.grid{display:grid;gap:20px}
+.kpi{display:flex;flex-direction:column;gap:6px;padding:16px 18px}
+.kpi b{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.kpi span{font-size:12px;color:#93A0B4}
+.bar{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#8B7CFF,#35E0D0)}
+.bar.w i{background:linear-gradient(90deg,#FFB547,#FF8A5B)}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px}
+.row:first-of-type{border-top:0}
+.btn{font-family:inherit;font-size:12px;font-weight:500;border-radius:9px;padding:7px 13px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#E8ECF3;cursor:pointer}
+.btn:hover{background:rgba(255,255,255,.1)}
+.btn.p{background:linear-gradient(135deg,#8B7CFF,#5B8CFF);border-color:transparent;color:#07090D;font-weight:600}
+.btn.p:hover{filter:brightness(1.1)}
+.node{border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.tl{display:flex;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px;align-items:flex-start}
+.tl:first-of-type{border-top:0}
+.av{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.tile{border-radius:14px;padding:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;gap:6px}
+.tile.live{background:linear-gradient(160deg,rgba(139,124,255,.22),rgba(53,224,208,.08));border-color:rgba(139,124,255,.3)}
+.search{display:flex;align-items:center;gap:10px;flex:1 1 320px;max-width:560px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:#93A0B4;font-size:14px}
+kbd{font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.08);color:#B6C0D0;margin-left:auto}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+a{color:#B5ABFF}a:hover{color:#fff}
+.btn:focus-visible,.nav:focus-visible{outline:2px solid #8B7CFF;outline-offset:2px}
+.c8{grid-template-columns:repeat(12,minmax(0,1fr))}
+</style>
+</helmet>
+
+<div class="app">
+<div class="glow"></div>
+
+<aside class="side">
+  <div style="display:flex;align-items:center;gap:10px;padding:2px 10px 18px">
+    <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#8B7CFF,#35E0D0);display:grid;place-items:center;color:#07090D;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px">F</div>
+    <div><div class="h" style="font-weight:600;font-size:18px">Facto</div><div class="sub" style="font-size:11px">control plane · v1</div></div>
+  </div>
+  <sc-for list="{{navMain}}" as="n" hint-placeholder-count="5">
+    <button class="{{n.cls}}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"></path></svg><span>{{n.label}}</span><sc-if value="{{n.badge}}" hint-placeholder-val="{{ false }}"><span class="n">{{n.badge}}</span></sc-if></button>
+  </sc-for>
+  <div class="sec">Operate</div>
+  <sc-for list="{{navOps}}" as="n" hint-placeholder-count="5">
+    <button class="nav"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"></path></svg><span>{{n.label}}</span></button>
+  </sc-for>
+  <div class="sec">Govern</div>
+  <sc-for list="{{navGov}}" as="n" hint-placeholder-count="4">
+    <button class="nav"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="{{n.d}}"></path></svg><span>{{n.label}}</span></button>
+  </sc-for>
+  <div style="margin-top:auto;padding:14px;border-radius:14px;background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.2);font-size:12px;color:#B6C0D0;line-height:1.5;margin-top:28px">
+    <div class="pill ok" style="margin-bottom:8px"><span class="dot"></span>Private by default</div>
+    Nothing is exposed publicly. Reachable only over your tailnet.
+  </div>
+</aside>
+
+<main class="main">
+  <div class="top">
+    <label class="search"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.5-4.5"></path></svg><input aria-label="Search or run a command" placeholder="Ask Facto, search anything, or run a command" style="all:unset;flex:1;color:#E8ECF3;font-size:14px"><kbd>⌘K</kbd></label>
+    <div style="margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="pill cy"><span class="dot"></span>Tailnet · 5 devices</span>
+      <span class="pill in">Privacy mode · Strict</span>
+      <button class="btn" aria-label="Notifications">Alerts · 2</button>
+      <div class="av" style="background:linear-gradient(135deg,#8B7CFF,#35E0D0);color:#07090D;width:34px;height:34px;border-radius:50%" aria-label="Owner">SP</div>
+    </div>
+  </div>
+
+  <!-- hero -->
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))">
+    <div class="card" style="padding:26px 28px;display:flex;gap:26px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,rgba(139,124,255,.2),rgba(53,224,208,.06) 55%,#0E1219)">
+      <div style="position:relative;width:132px;height:132px;flex:none">
+        <svg viewBox="0 0 120 120" width="132" height="132" role="img" aria-label="Estate health 97 percent"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8B7CFF"></stop><stop offset="1" stop-color="#35E0D0"></stop></linearGradient></defs><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"></circle><circle cx="60" cy="60" r="50" fill="none" stroke="url(#g1)" stroke-width="10" stroke-linecap="round" stroke-dasharray="305 314" transform="rotate(-90 60 60)"></circle></svg>
+        <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div><div class="h" style="font-size:34px;font-weight:700;line-height:1">97</div><div class="sub" style="font-size:11px">health</div></div></div>
+      </div>
+      <div style="flex:1 1 220px;min-width:0">
+        <div class="sub" style="margin-bottom:6px">Sat 28 Nov · 00:10</div>
+        <h1 class="h" style="margin:0;font-size:30px;line-height:1.12;font-weight:600">Everything you own is running. Two things need you.</h1>
+        <p style="margin:10px 0 0;color:#A9B4C6;font-size:14px;line-height:1.5">4 of 5 nodes online, 47 services healthy, the last restore test passed. The cloud node is paused by policy.</p>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:16px">
+      <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+        <div class="card kpi"><span>{{k.label}}</span><b>{{k.value}}</b><div class="bar" style="margin-top:4px"><i style="width:{{k.pct}}"></i></div><span>{{k.note}}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- approvals + estate map -->
+  <div class="grid c8">
+    <section class="card" style="grid-column:span 5">
+      <div class="hd"><h3>Needs your decision</h3><span class="pill wa">{{pendingCount}} pending</span></div>
+      <sc-for list="{{approvals}}" as="a" hint-placeholder-count="3">
+        <div class="row" style="align-items:flex-start;opacity:{{a.opacity}}">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:500;line-height:1.35">{{a.title}}</div>
+            <div class="sub" style="margin-top:3px">{{a.by}}</div>
+            <div style="margin-top:8px"><span class="{{a.riskCls}}">{{a.risk}}</span></div>
+          </div>
+          <sc-if value="{{a.open}}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:8px"><button class="btn" onClick="{{a.deny}}">Deny</button><button class="btn p" onClick="{{a.approve}}">Approve</button></div>
+          </sc-if>
+          <sc-if value="{{a.closed}}" hint-placeholder-val="{{ false }}">
+            <span class="{{a.doneCls}}">{{a.done}}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="card" style="grid-column:span 7">
+      <div class="hd"><h3>Estate</h3><div style="display:flex;gap:8px"><span class="pill ne">5 nodes</span><span class="pill ne">47 services</span><span class="pill ne">12 models</span><span class="pill ne">31 devices</span></div></div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <sc-for list="{{nodes}}" as="n" hint-placeholder-count="4">
+          <div class="node" style="opacity:{{n.opacity}}">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px"><b class="h" style="font-size:14px">{{n.name}}</b><span class="{{n.cls}}"><span class="dot"></span>{{n.status}}</span></div>
+            <div class="sub">{{n.role}}</div>
+            <div><div class="sub" style="display:flex;justify-content:space-between"><span>CPU</span><span class="mono">{{n.cpu}}%</span></div><div class="bar" style="margin-top:4px"><i style="width:{{n.cpu}}%"></i></div></div>
+            <div><div class="sub" style="display:flex;justify-content:space-between"><span>Memory</span><span class="mono">{{n.mem}}%</span></div><div class="{{n.memCls}}" style="margin-top:4px"><i style="width:{{n.mem}}%"></i></div></div>
+            <div class="sub mono" style="display:flex;justify-content:space-between"><span>{{n.svc}} svc</span><span>{{n.lat}}</span></div>
+            <div><span class="pill ne">{{n.privacy}}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:14px;display:flex;align-items:center;gap:10px;font-size:12px;color:#93A0B4"><span style="flex:1;border-top:1px dashed rgba(139,124,255,.45)"></span><span class="mono">encrypted mesh · tailscale</span><span style="flex:1;border-top:1px dashed rgba(53,224,208,.45)"></span></div>
+    </section>
+  </div>
+
+  <!-- AI gateway -->
+  <section class="card">
+    <div class="hd"><h3>AI gateway · privacy-aware routing</h3><div style="display:flex;gap:8px"><span class="pill ok"><span class="dot"></span>0 privacy boundary crossings</span><span class="pill ne">24 h</span></div></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:24px">
+      <div>
+        <div class="sub" style="margin-bottom:8px">Spend today</div>
+        <div style="display:flex;align-items:baseline;gap:10px"><b class="h" style="font-size:38px;letter-spacing:-.03em">$3.42</b><span class="pill ok">−18% vs avg</span></div>
+        <svg viewBox="0 0 300 80" width="100%" height="80" style="margin-top:10px" aria-hidden="true"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8B7CFF" stop-opacity=".45"></stop><stop offset="1" stop-color="#8B7CFF" stop-opacity="0"></stop></linearGradient></defs><path d="{{spendArea}}" fill="url(#g2)"></path><path d="{{spendLine}}" fill="none" stroke="#B5ABFF" stroke-width="2" stroke-linejoin="round"></path></svg>
+        <div class="sub" style="margin-top:12px">Where requests ran</div>
+        <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:6px;gap:2px"><span style="width:81%;background:#35E0D0"></span><span style="width:19%;background:#8B7CFF"></span></div>
+        <div class="sub" style="display:flex;justify-content:space-between;margin-top:6px"><span><span style="color:#5BEADB">●</span> Local 81%</span><span><span style="color:#B5ABFF">●</span> Cloud 19%</span></div>
+      </div>
+      <div>
+        <div class="sub" style="margin-bottom:8px">Routing rules</div>
+        <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+          <div class="row"><span class="{{r.cls}}" style="min-width:92px;justify-content:center">{{r.cls2}}</span><span style="flex:1;color:#C9D2E0">{{r.rule}}</span><span class="mono sub">{{r.hits}}</span></div>
+        </sc-for>
+      </div>
+      <div>
+        <div class="sub" style="margin-bottom:8px">Models</div>
+        <sc-for list="{{models}}" as="m" hint-placeholder-count="4">
+          <div class="row"><span class="dot" style="color:{{m.color}}"></span><div style="flex:1;min-width:0"><div class="mono" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{m.name}}</div><div class="sub">{{m.where}}</div></div><span class="mono sub">{{m.tps}}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- agents + home -->
+  <div class="grid c8">
+    <section class="card" style="grid-column:span 7">
+      <div class="hd"><h3>Agents &amp; tasks</h3><div style="display:flex;gap:8px"><span class="pill in">12 running</span><button class="btn">Submit task</button></div></div>
+      <sc-for list="{{runs}}" as="r" hint-placeholder-count="4">
+        <div class="row" style="align-items:flex-start">
+          <span class="av" style="background:{{r.bg}};color:#07090D">{{r.ini}}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.title}}</span><span class="{{r.cls}}">{{r.status}}</span></div>
+            <div class="sub" style="margin:3px 0 8px">{{r.meta}}</div>
+            <div class="bar"><i style="width:{{r.pct}}%"></i></div>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="card" style="grid-column:span 5">
+      <div class="hd"><h3>Home</h3><span class="pill ok"><span class="dot"></span>Pulse · Home Assistant</span></div>
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+        <sc-for list="{{home}}" as="h" hint-placeholder-count="4">
+          <div class="{{h.cls}}"><span class="sub">{{h.label}}</span><b class="h" style="font-size:22px;letter-spacing:-.02em">{{h.value}}</b><span class="sub">{{h.note}}</span></div>
+        </sc-for>
+      </div>
+      <div class="sub" style="margin-top:14px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04)">Front door unlocked at 23:48 → agent started "evening wrap-up" on Mac mini</div>
+    </section>
+  </div>
+
+  <!-- services + backups + automations -->
+  <div class="grid c8">
+    <section class="card" style="grid-column:span 5">
+      <div class="hd"><h3>Services</h3><span class="pill ok">46 healthy · 1 degraded</span></div>
+      <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 18px">
+        <sc-for list="{{services}}" as="s" hint-placeholder-count="8">
+          <div class="row" style="padding:9px 0"><span class="{{s.cls}}" style="background:transparent;padding:0"><span class="dot"></span></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{s.name}}</span><span class="mono sub">{{s.node}}</span></div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section class="card" style="grid-column:span 4">
+      <div class="hd"><h3>Backups &amp; recovery</h3><span class="pill ok">Restore tested</span></div>
+      <sc-for list="{{backups}}" as="b" hint-placeholder-count="4">
+        <div class="row"><div style="flex:1;min-width:0"><div style="font-weight:500">{{b.name}}</div><div class="sub">{{b.note}}</div></div><span class="{{b.cls}}">{{b.status}}</span></div>
+      </sc-for>
+    </section>
+
+    <section class="card" style="grid-column:span 3">
+      <div class="hd"><h3>Automations</h3></div>
+      <div style="padding:14px;border-radius:14px;background:linear-gradient(160deg,rgba(53,224,208,.13),rgba(139,124,255,.1));border:1px solid rgba(53,224,208,.25)">
+        <div class="sub" style="margin-bottom:8px">Last run · 3 min ago</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px"><span class="pill bd" style="align-self:flex-start">metabase unhealthy</span><span class="sub" style="padding-left:6px">↓</span><span class="pill in" style="align-self:flex-start">restart (reversible)</span><span class="sub" style="padding-left:6px">↓</span><span class="pill ok" style="align-self:flex-start">ntfy · recovered</span></div>
+      </div>
+      <div class="sub" style="margin-top:12px">18 events routed to n8n today</div>
+    </section>
+  </div>
+
+  <!-- activity -->
+  <section class="card">
+    <div class="hd"><h3>One timeline · humans, automations and agents</h3><div style="display:flex;gap:8px"><span class="pill ne">All actors</span><span class="pill ne">All risk levels</span></div></div>
+    <sc-for list="{{activity}}" as="e" hint-placeholder-count="6">
+      <div class="tl"><span class="mono sub" style="width:46px;flex:none;padding-top:4px">{{e.time}}</span><span class="av" style="background:{{e.bg}};color:#07090D">{{e.ini}}</span><div style="flex:1;min-width:0"><div>{{e.text}}</div><div class="sub" style="margin-top:2px">{{e.who}} · {{e.src}}</div></div><span class="{{e.cls}}">{{e.risk}}</span></div>
+    </sc-for>
+  </section>
+</main>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2480}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { decided: {} };
+  }
+  line(vals, w, h, close) {
+    const max = Math.max(...vals), min = Math.min(...vals);
+    const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, h - 6 - ((v - min) / (max - min)) * (h - 14)]);
+    let d = 'M' + pts.map((p) => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L');
+    if (close) d += ' L' + w + ' ' + h + ' L0 ' + h + ' Z';
+    return d;
+  }
+  renderVals() {
+    const decided = this.state.decided;
+    const approvals = [
+      { id: 'a1', title: 'Restart postgres-main on home server', by: 'Requested by Docker adapter · deploy of metabase 0.52', risk: 'destructive', riskCls: 'pill bd' },
+      { id: 'a2', title: 'Rotate Jira API token for Pani adapter', by: 'Requested by you · scope: read issues', risk: 'privileged', riskCls: 'pill wa' },
+      { id: 'a3', title: 'Run EMS-641 on cloud model (client data)', by: 'Policy check: refused. Needs an explicit override', risk: 'privacy block', riskCls: 'pill in' }
+    ].map((a) => {
+      const d = decided[a.id];
+      return Object.assign({}, a, {
+        open: !d, closed: !!d,
+        opacity: d ? '.6' : '1',
+        done: d === 'ok' ? 'Approved · logged' : 'Denied · logged',
+        doneCls: d === 'ok' ? 'pill ok' : 'pill ne',
+        approve: () => this.setState({ decided: Object.assign({}, decided, { [a.id]: 'ok' }) }),
+        deny: () => this.setState({ decided: Object.assign({}, decided, { [a.id]: 'no' }) })
+      });
+    });
+    const pendingCount = approvals.filter((a) => a.open).length;
+    const nav = (label, d, cls, badge) => ({ label, d, cls: cls || 'nav', badge: badge || '' });
+    return {
+      pendingCount,
+      approvals,
+      navMain: [
+        nav('Overview', 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', 'nav on'),
+        nav('Inventory', 'M4 7l8-4 8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4'),
+        nav('Nodes', 'M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01'),
+        nav('Services', 'M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5'),
+        nav('Approvals', 'M5 12l5 5L20 7', 'nav', String(pendingCount))
+      ],
+      navOps: [
+        nav('AI gateway', 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18'),
+        nav('Agents', 'M9 3h6v4H9zM5 11h14v8H5zM9 15h.01M15 15h.01'),
+        nav('Home', 'M3 11l9-8 9 8v9H3z'),
+        nav('Automations', 'M13 2L4 14h7l-1 8 9-12h-7z'),
+        nav('Backups', 'M12 3v12M7 10l5 5 5-5M4 20h16')
+      ],
+      navGov: [
+        nav('Policy', 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z'),
+        nav('Identity', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 4-6 8-6s8 2 8 6'),
+        nav('Activity', 'M3 12h4l3-8 4 16 3-8h4'),
+        nav('Adapters', 'M9 3v5M15 3v5M6 8h12v4a6 6 0 01-12 0zM12 18v3')
+      ],
+      kpis: [
+        { label: 'Nodes online', value: '4 / 5', pct: '80%', note: 'Cloud VPS paused by policy' },
+        { label: 'Services healthy', value: '46 / 47', pct: '98%', note: '1 degraded · alerting' },
+        { label: 'Tasks in flight', value: '236', pct: '62%', note: 'Jira 140 · Trello 96' },
+        { label: 'Agent runs today', value: '38', pct: '74%', note: '31 ok · 5 partial · 2 failed' }
+      ],
+      nodes: [
+        { name: 'MacBook', role: 'Dev laptop · roaming', status: 'online', cls: 'pill ok', cpu: 14, mem: 71, memCls: 'bar w', svc: 9, lat: '4 ms', privacy: 'personal', opacity: '1' },
+        { name: 'Mac mini', role: 'Home server · models', status: 'online', cls: 'pill ok', cpu: 46, mem: 58, memCls: 'bar', svc: 24, lat: '2 ms', privacy: 'client data', opacity: '1' },
+        { name: 'Raspberry Pi', role: 'Home · Pulse, HA', status: 'online', cls: 'pill ok', cpu: 9, mem: 33, memCls: 'bar', svc: 8, lat: '3 ms', privacy: 'personal', opacity: '1' },
+        { name: 'Cloud VPS', role: 'Public edge · off', status: 'paused', cls: 'pill ne', cpu: 0, mem: 0, memCls: 'bar', svc: 6, lat: '38 ms', privacy: 'public ok', opacity: '.7' }
+      ],
+      spendLine: this.line([3, 5, 4, 7, 6, 9, 8, 11, 9, 12, 10, 14], 300, 80, false),
+      spendArea: this.line([3, 5, 4, 7, 6, 9, 8, 11, 9, 12, 10, 14], 300, 80, true),
+      rules: [
+        { cls: 'pill bd', cls2: 'client data', rule: 'Local models only. Never leaves the tailnet', hits: '412' },
+        { cls: 'pill wa', cls2: 'personal', rule: 'Local first, cloud if over 30 s queue', hits: '186' },
+        { cls: 'pill cy', cls2: 'public', rule: 'Cheapest model that passes the eval', hits: '94' },
+        { cls: 'pill in', cls2: 'fallback', rule: 'Never crosses a privacy boundary', hits: '0 breaches' }
+      ],
+      models: [
+        { name: 'qwen3.8-27b', where: 'Mac mini · Ollama', tps: '38 tok/s', color: '#35E0D0' },
+        { name: 'gemma-4-26b-a4b', where: 'MacBook · Ollama', tps: '52 tok/s', color: '#35E0D0' },
+        { name: 'claude-sonnet-5-5', where: 'Cloud · via LiteLLM', tps: '$1.90 today', color: '#8B7CFF' },
+        { name: 'claude-haiku-5-5', where: 'Cloud · via LiteLLM', tps: '$0.44 today', color: '#8B7CFF' }
+      ],
+      runs: [
+        { ini: 'P', bg: '#B5ABFF', title: 'EMS-641 bills split · q38v2', meta: 'Pani · Mac mini · client data · 11 of 12 chunks', pct: 92, status: 'running', cls: 'pill in' },
+        { ini: 'C', bg: '#5BEADB', title: 'Refactor path aliases and add lint rule', meta: 'Claude Code · MacBook · 21 min', pct: 58, status: 'running', cls: 'pill in' },
+        { ini: 'O', bg: '#FFC46B', title: 'Triage open PRs and CI failures', meta: 'OpenHands · Mac mini · personal', pct: 100, status: 'done', cls: 'pill ok' },
+        { ini: 'P', bg: '#B5ABFF', title: 'EMS-192 list active items only', meta: 'Pani · 1 of 5 chunks', pct: 20, status: 'partial', cls: 'pill wa' }
+      ],
+      home: [
+        { cls: 'tile live', label: 'Energy now', value: '1.2 kW', note: 'solar covering 62%' },
+        { cls: 'tile', label: 'Lights on', value: '6 of 19', note: 'living room, study' },
+        { cls: 'tile', label: 'Front door', value: 'Locked', note: 'since 23:51' },
+        { cls: 'tile', label: 'Climate', value: '23.1 °C', note: 'study · 54% humidity' }
+      ],
+      services: [
+        { name: 'postgres-main', node: 'mini', cls: 'ok' }, { name: 'ollama', node: 'mini', cls: 'ok' },
+        { name: 'litellm', node: 'mini', cls: 'ok' }, { name: 'n8n', node: 'mini', cls: 'ok' },
+        { name: 'metabase', node: 'mini', cls: 'wa' }, { name: 'grafana', node: 'mini', cls: 'ok' },
+        { name: 'home-assistant', node: 'pi', cls: 'ok' }, { name: 'pulse', node: 'pi', cls: 'ok' },
+        { name: 'traefik', node: 'mini', cls: 'ok' }, { name: 'ntfy', node: 'mini', cls: 'ok' }
+      ],
+      backups: [
+        { name: 'restic · off-site', note: 'Last 02:00 · 14.2 GB · encrypted', status: 'ok', cls: 'pill ok' },
+        { name: 'pg_dump · postgres-main', note: 'Last 01:30 · retention 30 d', status: 'ok', cls: 'pill ok' },
+        { name: 'Restore test', note: 'Passed 3 days ago · 4 min 12 s', status: 'passed', cls: 'pill ok' },
+        { name: 'Time Machine', note: 'MacBook · next in 41 min', status: 'running', cls: 'pill in' }
+      ],
+      activity: [
+        { time: '00:07', ini: 'A', bg: '#FFC46B', text: 'Restarted metabase after 3 failed health checks', who: 'n8n automation', src: 'docker adapter', risk: 'reversible', cls: 'pill in' },
+        { time: '23:58', ini: 'G', bg: '#B5ABFF', text: 'Pani job EMS-641 g26v2 finished: 11 of 12 chunks', who: 'Agent · Pani', src: 'pani adapter', risk: 'read', cls: 'pill ne' },
+        { time: '23:52', ini: 'P', bg: '#5BEADB', text: 'Refused cloud routing for EMS-641: task is client data', who: 'Policy engine', src: 'privacy check', risk: 'privacy deny', cls: 'pill bd' },
+        { time: '23:48', ini: 'H', bg: '#8CE3A5', text: 'Front door unlocked, started evening wrap-up agent', who: 'Home event', src: 'pulse adapter', risk: 'reversible', cls: 'pill in' },
+        { time: '23:31', ini: 'S', bg: '#E8ECF3', text: 'Enrolled node "Raspberry Pi" with a one-time token', who: 'You', src: 'dashboard', risk: 'privileged', cls: 'pill wa' },
+        { time: '23:02', ini: 'B', bg: '#FFB1BA', text: 'Moved ticket EMS-192 to In Review', who: 'Agent · Claude Code', src: 'jira adapter', risk: 'reversible', cls: 'pill in' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

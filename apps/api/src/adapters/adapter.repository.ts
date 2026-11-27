@@ -25,6 +25,8 @@ export interface AdapterRepository {
   create(input: Pick<AdapterRecord, 'manifest' | 'scopes' | 'tokenHash'>, db?: Queryable): Promise<AdapterRecord>;
   updateManifest(id: string, manifest: AdapterManifest, scopes: string[]): Promise<AdapterRecord>;
   recordHealth(id: string, status: AdapterStatus, detail: string | null): Promise<AdapterRecord>;
+  // Replaces the token hash and marks the adapter degraded until it reports again. Pass a transaction client as `db`.
+  resetToken(id: string, tokenHash: string, detail: string, db?: Queryable): Promise<AdapterRecord>;
 }
 
 export const ADAPTER_REPOSITORY = Symbol('ADAPTER_REPOSITORY');
@@ -65,6 +67,11 @@ export class InMemoryAdapterRepository implements AdapterRepository {
   async recordHealth(id: string, status: AdapterStatus, detail: string | null) {
     const row = this.mustGet(id);
     Object.assign(row, { status, statusDetail: detail, lastSeenAt: new Date() });
+    return row;
+  }
+  async resetToken(id: string, tokenHash: string, detail: string) {
+    const row = this.mustGet(id);
+    Object.assign(row, { tokenHash, status: 'degraded', statusDetail: detail });
     return row;
   }
   private mustGet(id: string): AdapterRecord {
