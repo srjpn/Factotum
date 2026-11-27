@@ -22,6 +22,9 @@ export interface FileState {
   sidechain: number;
   models: Set<string>;
   tokens: Usage;
+  /** Session title records; the latest of each wins. Client-data: never logged. */
+  customTitle?: string;
+  agentName?: string;
   latestContext?: number;
   /** An owner-facing tool_use with no answer yet (best effort, from the transcript tail). */
   pendingAsk?: { id: string; name: string; ts: number };
@@ -52,6 +55,11 @@ export const newState = (sessionId: string, projectDir: string): FileState => ({
 export function applyLine(st: FileState, line: string): void {
   const p = parseLine(line);
   if (!p) return;
+  if ('title' in p) { // latest record wins
+    if (p.type === 'custom-title') st.customTitle = p.title;
+    else st.agentName = p.title;
+    return;
+  }
   st.messages += 1;
   if (p.sidechain) st.sidechain += 1;
   if (st.firstTs === undefined || p.ts < st.firstTs) st.firstTs = p.ts;

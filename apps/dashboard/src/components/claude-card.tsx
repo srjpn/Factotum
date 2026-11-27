@@ -30,7 +30,7 @@ export function ClaudeCard({ sessions, usage, now }: { sessions: Res<InventoryIt
           {[...sum.waiting, ...sum.active].slice(0, 5).map((x) => (
             <div className="row" key={x.externalId}>
               <span className="grow">
-                <span className="clip">{x.title} <span className="f">{x.externalId}</span></span>
+                <span className="clip">{x.title}{x.project ? <> <span className="f">[{x.project}]</span></> : null}</span>
                 <span className="f">{[x.models[0], `${x.messageCount} msgs`, `${formatTokens(totalTokens(x.tokens))} tokens`, x.status === 'waiting' ? `waiting ${formatDuration(x.waitingSeconds ?? 0)}` : `active ${formatRelativeTime(x.lastActivityAt, now)}`].filter(Boolean).join(' · ')}</span>
               </span>
               {x.status === 'waiting' ? <Pill tone="warn">needs you</Pill> : null}

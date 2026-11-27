@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assistant, QUESTION, SECRET, SECRET_PATH, toolResult, toolUse, user } from './fixtures.js';
+import { agentName, assistant, customTitle, QUESTION, SECRET, SECRET_PATH, toolResult, toolUse, user } from './fixtures.js';
 import { parseLine } from './parse.js';
 
 describe('parseLine', () => {
@@ -40,5 +40,15 @@ describe('owner-facing tool uses', () => {
     const p = parseLine(toolResult('2026-11-27T10:01:00Z', 'tu_1'))!;
     expect(p.resultIds).toEqual(['tu_1']);
     expect(JSON.stringify(p)).not.toContain(SECRET);
+  });
+});
+
+describe('title records', () => {
+  it('reads custom-title and agent-name lines (no timestamp needed), trimmed and capped', () => {
+    expect(parseLine(customTitle('  My title '))).toEqual({ type: 'custom-title', title: 'My title' });
+    expect(parseLine(agentName('agent-x'))).toEqual({ type: 'agent-name', title: 'agent-x' });
+    expect(parseLine(customTitle('x'.repeat(500)) )).toMatchObject({ title: 'x'.repeat(200) });
+    expect(parseLine(customTitle('  '))).toBeNull();
+    expect(parseLine('{"type":"custom-title","sessionId":"s"}')).toBeNull();
   });
 });

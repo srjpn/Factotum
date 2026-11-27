@@ -66,7 +66,7 @@ describe('container item', () => {
 describe('claude kinds (LT-17c)', () => {
   const tokens = { input: 1, output: 2, cacheWrite: 3, cacheRead: 4 };
   const session = {
-    externalId: 'abcd1234', title: 'proj', status: 'active', statusLabel: 'active', models: ['claude-opus-5-5'],
+    externalId: 'abcd1234', title: 'Fix the invoice bug', project: 'proj', status: 'active', statusLabel: 'active', models: ['claude-opus-5-5'],
     startedAt: '2026-11-27T10:00:00Z', lastActivityAt: '2026-11-27T10:05:00Z', messageCount: 4, sidechainMessages: 0,
     tokens, durationSeconds: 300, activeSeconds: 240, estimatedCostUsd: 0.01, source: 'claude',
   };

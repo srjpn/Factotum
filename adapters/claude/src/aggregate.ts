@@ -44,7 +44,8 @@ function toSession(st: FileState, o: AggregateOptions): ClaudeSessionItem | null
   const active = o.now - st.lastTs <= o.activeWindowMs || o.now - st.mtimeMs <= o.activeWindowMs;
   return {
     externalId: st.sessionId.slice(0, 8),
-    title: projectLabel(st.projectDir, o.hideProjectNames),
+    title: (st.customTitle ?? st.agentName ?? st.sessionId.slice(0, 8)).slice(0, 200),
+    project: projectLabel(st.projectDir, o.hideProjectNames),
     status: waiting ? 'waiting' : active ? 'active' : 'idle',
     statusLabel: waiting ? 'needs you' : active ? 'active' : 'idle',
     ...(waiting ? { waitingTool: waiting.name, waitingSeconds: sec(o.now - waiting.ts) } : {}),
