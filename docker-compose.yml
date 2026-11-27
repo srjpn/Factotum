@@ -32,5 +32,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    environment:
+      # The dashboard server calls the API; the browser never does and never sees the token.
+      FACTO_API_URL: http://api:3000
+      FACTO_ADMIN_TOKEN: ${FACTO_ADMIN_TOKEN:?set FACTO_ADMIN_TOKEN in .env (at least 24 characters)}
+      FACTO_DASHBOARD_PASSWORD: ${FACTO_DASHBOARD_PASSWORD:?set FACTO_DASHBOARD_PASSWORD in .env (at least 8 characters)}
+      FACTO_SESSION_SECRET: ${FACTO_SESSION_SECRET:?set FACTO_SESSION_SECRET in .env (at least 32 characters)}
+      FACTO_COOKIE_SECURE: ${FACTO_COOKIE_SECURE:-}
+    ports:
+      - "${FACTO_BIND_ADDR:-127.0.0.1}:${FACTO_DASHBOARD_PORT:-3001}:3001"
+    depends_on:
+      - api
+    restart: unless-stopped
+
 volumes:
   facto-db:

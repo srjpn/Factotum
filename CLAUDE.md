@@ -45,7 +45,7 @@ TypeScript throughout. Next.js for the dashboard, NestJS for the control plane, 
 
 ## Commands
 
-pnpm workspace (`apps/api`, `apps/node-agent`, `packages/contracts`). Node 22 or newer, pnpm 10.
+pnpm workspace (`apps/api`, `apps/dashboard`, `apps/node-agent`, `packages/contracts`). Node 22 or newer, pnpm 10.
 
 | Task | Command |
 | --- | --- |
@@ -56,11 +56,12 @@ pnpm workspace (`apps/api`, `apps/node-agent`, `packages/contracts`). Node 22 or
 | Build | `pnpm build` |
 | Integration tests | `docker run --rm -d -p 55432:5432 -e POSTGRES_PASSWORD=test postgres:17-alpine`, then `FACTO_TEST_DATABASE_URL=postgres://postgres:test@localhost:55432/postgres pnpm test` (skipped when unset; each run uses its own schema) |
 | Run the stack | `cp .env.example .env`, set `POSTGRES_PASSWORD` and `FACTO_ADMIN_TOKEN`, then `docker compose up --build` |
+| Run the dashboard (dev) | `pnpm --filter @facto/dashboard dev` with `FACTO_API_URL`, `FACTO_ADMIN_TOKEN`, `FACTO_DASHBOARD_PASSWORD`, `FACTO_SESSION_SECRET` set (see `docs/runbooks/dashboard.md`) |
 | Multi-arch image check | `docker buildx build --platform linux/amd64,linux/arm64 -f apps/api/Dockerfile .` |
 
 Settings come only from environment variables (`FACTO_*`, `POSTGRES_*`). The API and the node agent have no default control plane address. The API applies the SQL files in `apps/api/migrations/` on start.
 
-API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (interim, replaced by login in LT-6); node routes use the per-node credential.
+API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (used by the dashboard server only; the dashboard has its own owner login, LT-6); node routes use the per-node credential.
 
 | Route | Auth | Purpose |
 | --- | --- | --- |
