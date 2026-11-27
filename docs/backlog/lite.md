@@ -47,6 +47,8 @@ Status: done, built on LT-3. API shape is in [adapter-contract.md](../architectu
 
 Status: done on branch `lt-5b-inventory-sdk`. Migration is `004_inventory.sql`; it depends only on `002_adapters.sql`. Not done: other inventory kinds (`run`, `container`, ...) are added to `packages/contracts/src/inventory.ts` by the adapter chunk that needs them, and the SDK has no token rotation.
 
+> LT-8 status (2026-11-27): built (`adapters/jira`, runbook `docs/runbooks/jira-adapter.md`), tested against a mock Jira and the real API. Live check against a real Jira site is pending the owner (needs site URL, email, API token, project keys).
+
 ## Suggested order
 
 1. LT-1, LT-2, LT-3.
