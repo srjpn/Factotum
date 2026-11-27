@@ -10,6 +10,10 @@ const ConfigSchema = z.object({
   FACTO_OFFLINE_AFTER_SECONDS: z.coerce.number().int().min(10).max(110).default(90),
   // How often the monitor checks for status changes. 0 turns it off (used in tests).
   FACTO_STATUS_CHECK_SECONDS: z.coerce.number().int().min(0).default(15),
+  // Optional ntfy notifications (LT-16). Both URL and topic are needed to turn them on. No default server.
+  FACTO_NTFY_URL: z.string().url().optional(),
+  FACTO_NTFY_TOPIC: z.string().min(1).optional(),
+  FACTO_NTFY_TOKEN: z.string().min(1).optional(),
 });
 
 export type Config = {
@@ -18,17 +22,29 @@ export type Config = {
   adminToken: string;
   offlineAfterSeconds: number;
   statusCheckSeconds: number;
+  ntfy?: { url: string; topic: string; token?: string };
 };
 
 // Every setting comes from the environment so the same image runs on any machine.
 // There is deliberately no default for the database URL or the admin token.
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
-  const parsed = ConfigSchema.parse(env);
+  // Treat empty strings (an unset Compose variable) as unset.
+  const clean = Object.fromEntries(Object.entries(env).filter(([, v]) => v !== ''));
+  const parsed = ConfigSchema.parse(clean);
+  const ntfy =
+    parsed.FACTO_NTFY_URL && parsed.FACTO_NTFY_TOPIC
+      ? {
+          url: parsed.FACTO_NTFY_URL,
+          topic: parsed.FACTO_NTFY_TOPIC,
+          ...(parsed.FACTO_NTFY_TOKEN ? { token: parsed.FACTO_NTFY_TOKEN } : {}),
+        }
+      : undefined;
   return {
     port: parsed.FACTO_PORT,
     databaseUrl: parsed.FACTO_DATABASE_URL,
     adminToken: parsed.FACTO_ADMIN_TOKEN,
     offlineAfterSeconds: parsed.FACTO_OFFLINE_AFTER_SECONDS,
     statusCheckSeconds: parsed.FACTO_STATUS_CHECK_SECONDS,
+    ...(ntfy ? { ntfy } : {}),
   };
 }

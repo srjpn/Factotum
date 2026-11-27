@@ -8,6 +8,7 @@ import { HealthController } from './health.controller.js';
 import { NodesController } from './nodes/nodes.controller.js';
 import { NodeStatusMonitor } from './nodes/node-status.monitor.js';
 import { NodesService } from './nodes/nodes.service.js';
+import { NotifierService } from './notifications/notifier.service.js';
 
 @Module({
   controllers: [HealthController, NodesController, ActivityController],
@@ -17,6 +18,7 @@ import { NodesService } from './nodes/nodes.service.js';
     ActivityService,
     NodesService,
     NodeStatusMonitor,
+    NotifierService,
     AdminGuard,
   ],
 })

@@ -38,6 +38,8 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
 
+> LT-16 status (2026-11-27): done for node offline, node online and denied enrolment (see `docs/runbooks/notifications.md`). Run finished, run failed and battery low are added as rules in `apps/api/src/notifications/rules.ts` when LT-9 and the battery metric exist. Needs an owner-run ntfy server and topic.
+
 ## Suggested order
 
 1. LT-1, LT-2, LT-3.

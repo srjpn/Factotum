@@ -26,9 +26,18 @@ type Row = {
   details: Record<string, unknown>;
 };
 
+export type ActivityListener = (entry: NewActivity) => void | Promise<void>;
+
 @Injectable()
 export class ActivityService {
+  private readonly listeners: ActivityListener[] = [];
+
   constructor(@Inject(POOL) private readonly pool: Queryable) {}
+
+  // Subscribers (for example the Notifier) hear about each committed entry. They must not break the action.
+  addListener(listener: ActivityListener): void {
+    this.listeners.push(listener);
+  }
 
   // Pass a transaction client as `db` so the entry commits or rolls back with the change it describes.
   async record(entry: NewActivity, db: Queryable = this.pool): Promise<void> {
@@ -46,6 +55,16 @@ export class ActivityService {
         JSON.stringify(entry.details ?? {}),
       ],
     );
+    // Only entries written outside a transaction are announced, so listeners never act on rolled-back work.
+    if (db === this.pool) {
+      for (const listener of this.listeners) {
+        try {
+          Promise.resolve(listener(entry)).catch(() => undefined);
+        } catch {
+          // a listener failing must never affect the caller
+        }
+      }
+    }
   }
 
   async list(limit = 100): Promise<ActivityEntry[]> {
