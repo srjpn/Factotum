@@ -18,7 +18,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | ID | Chunk | Depends on | Acceptance criteria | Maps to |
 | --- | --- | --- | --- | --- |
 | LT-1 | Decisions | none | ADR-001 and ADR-002 Accepted. A lite-track ADR ([ADR-009](../adr/009-lite-track.md)) records the datastore (Postgres in Docker), where the control plane runs (the MacBook for now) and that this is single-owner. Open questions on the Pani interface and Pulse state are answered in `docs/open-questions.md`. **Status: done except for the owner's confirmation of ADR-009 and the Pulse question** | P0-1 |
-| LT-2 | Repository skeleton | LT-1 | pnpm workspace with `apps/api`, `apps/node-agent`, `packages/contracts`; lint, typecheck and test commands listed in CLAUDE.md | P0-2 |
+| LT-2 | Repository skeleton | LT-1 | pnpm workspace with `apps/api`, `apps/node-agent`, `packages/contracts`; lint, typecheck and test commands listed in CLAUDE.md; a Docker Compose file starts the API and Postgres with settings only from environment variables, and images build for arm64 and amd64 | P0-2 |
 | LT-3 | Core: nodes and activity log | LT-2 | Node model; one-time enrolment token exchanged for a per-node credential; heartbeat endpoint rejects unknown credentials; append-only activity log written by every mutation | P0-4, P1-4 |
 | LT-4 | MacBook node agent | LT-3 | Agent enrols, then sends CPU, memory, disk, battery and Tailscale status on an interval; retries with backoff; a node with no heartbeat is shown offline within 2 minutes and online again when they resume | P0-5, P0-6, P1-6 |
 | LT-5 | Adapter registration | LT-3 | API validates manifests against `schemas/adapter-manifest.schema.json`; an undeclared risk level is rejected; adapters get a scoped service token and report health | P0-7 |
@@ -34,6 +34,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-15 | Docker adapter | LT-5 | Lists local containers with health and supports restart as a reversible action | P2 (Docker adapter) |
 | LT-16 | Notifications | LT-3 | Events such as run finished, run failed, node offline and battery low are sent through ntfy | P4 (ntfy) |
 | LT-17 | Extras | LT-5 | Any of: open PRs and CI state, AI usage and cost, Time Machine status, local dev servers. Each is its own adapter with its own acceptance criteria written when picked | none |
+| LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
 
 ## Suggested order
