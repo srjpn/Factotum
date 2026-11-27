@@ -30,6 +30,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-8 | Jira adapter (read-only) | LT-5 | Reports issues from chosen projects as tasks with status, tagged `client data`; one filter per project; credentials kept as secrets | none |
 | LT-9 | Tasks panel | LT-6, and LT-7 or LT-8 | One panel lists tasks from every task adapter with a source filter and privacy tag | none |
 | LT-10 | Pani adapter (read-only) | LT-5 | Reports runs with ticket, status, outcome and duration, and links each run to a task. The interface used to read Pani is written down in the adapter docs | none |
+| | | | **Status: done (read-only).** Pani has no HTTP API; the adapter reads its job files (see [runbook](../runbooks/pani-adapter.md)). `run` inventory kind added to the contracts. Each run carries a `ticketKey` parsed from its title or note, which is the link to a task (the tasks panel does the join). Checked against the owner's real Pani directory: all 32 jobs read, none unreadable. Write actions are LT-13 | |
 | LT-11 | Policy tiers and approval | LT-5, LT-6 | Every action has a risk level; `privileged` and `destructive` actions wait for owner approval in the dashboard; the decision and the approver are in the activity log | P2 (action tiers) |
 | LT-12 | Privacy class check | LT-9, LT-10 | A run for a `client data` task is refused if its target is outside the allowed list; the refusal is logged. No fallback crosses the boundary | ADR-007 (minimal) |
 | LT-13 | Write actions | LT-11, and the matching read adapter | Pani start and stop, Trello card move, Jira transition, each as a reversible action through the policy path with an activity-log entry | none |
@@ -70,5 +71,5 @@ The smallest useful slice is LT-1 to LT-4 and LT-6: a dashboard that shows your 
 
 - Which source does Pani pull tickets from: Jira only, or Trello too?
 - Does Jira need one filter per client project?
-- Pani exposes its state through an HTTP API (answered 2026-11-27). The endpoints still need to be written down in LT-10.
+- ~~Pani exposes its state through an HTTP API~~ Corrected in LT-10: Pani has a CLI and MCP tools but no HTTP API. Its state is files under `~/.config/openhands-orchestrator/`, which the adapter reads. LT-13 (start and stop) will need to call Pani's CLI or MCP tools, which needs its own decision.
 - Is Pulse's state readable yet, or is it a stub only?

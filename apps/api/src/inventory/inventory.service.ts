@@ -194,6 +194,7 @@ export class InventoryService {
 
   /** Owner read of cached inventory. Risk: read. */
   async list(filter: { kind?: string; source?: string; privacy?: string }): Promise<InventoryItem[]> {
+    if (filter.kind !== undefined && !isInventoryKind(filter.kind)) throw new BadRequestException(`unsupported inventory kind "${filter.kind}"`);
     const privacy = filter.privacy === undefined ? undefined : parseBody(PrivacyClassSchema, filter.privacy);
     const where: string[] = [];
     const params: unknown[] = [];
