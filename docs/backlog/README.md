@@ -10,6 +10,7 @@ Each task has an ID (`P0-1`), a short description and acceptance criteria. A tas
 | 1. Foundation | [phase-1.md](phase-1.md) | Ready |
 | 2. Hosting (plus one AI provider) | [phase-2.md](phase-2.md) | Ready |
 | 3 to 7 | Epics below | To be broken down |
+| Lite track (sandbox) | [lite.md](lite.md) | Ready |
 
 ## Later epics
 
