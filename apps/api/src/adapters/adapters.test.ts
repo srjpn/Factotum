@@ -86,3 +86,27 @@ describe('adapter health', () => {
     await expect(controller.health(`Bearer ${reg.token}`, { status: 'great' })).rejects.toMatchObject({ status: 400 });
   });
 });
+
+describe('adapter token reset', () => {
+  it('issues a new token, invalidates the old one, keeps the manifest and logs without the token', async () => {
+    const { controller, entries } = setup();
+    const reg = await controller.register(manifest);
+    await controller.health(`Bearer ${reg.token}`, { status: 'up' });
+    const out = await controller.reset('docker');
+    expect(out.token).toMatch(/^facto_adp_/);
+    expect(out.token).not.toBe(reg.token);
+    expect(out).toMatchObject({ name: 'docker', status: 'degraded', statusDetail: 'token reset, waiting for adapter' });
+    expect(out.scopes).toEqual(reg.scopes);
+    await expect(controller.health(`Bearer ${reg.token}`, { status: 'up' })).rejects.toMatchObject({ status: 401 });
+    expect(await controller.health(`Bearer ${out.token}`, { status: 'up' })).toMatchObject({ status: 'up' });
+    const last = entries[entries.length - 1]!;
+    expect([last.action, last.risk, last.outcome, last.targetId]).toEqual(['adapter.reset', 'destructive', 'success', 'docker']);
+    expect(JSON.stringify(entries)).not.toContain(out.token);
+  });
+
+  it('returns 404 and logs a denial for an unknown adapter', async () => {
+    const { controller, entries } = setup();
+    await expect(controller.reset('nope')).rejects.toMatchObject({ status: 404 });
+    expect(entries[0]).toMatchObject({ action: 'adapter.reset', outcome: 'denied', targetId: 'nope' });
+  });
+});

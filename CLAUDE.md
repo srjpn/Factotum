@@ -79,6 +79,7 @@ API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (used b
 | `POST /actions/run` | owner | Write actions (LT-13): queue a declared adapter action; risk is read from the manifest; `reversible` runs are `queued`, `destructive`/`privileged` wait for approval |
 | `GET /actions/runs`, `GET /actions/runs/:id` | owner | List or read runs (`?status=&adapter=`) |
 | `POST /adapters/actions/claim`, `POST /adapters/actions/:id/result` | adapter | The adapter polls for its next queued run and reports `success` or `failure`; logged as `action.start` and `action.result` |
+| `POST /adapters/:name/reset` | owner | Invalidate an adapter's service token and return a new one once; keeps row, manifest and inventory, health `degraded` until it reports (`destructive`, logged as `adapter.reset`) |
 | `PUT /adapters/:name/manifest` | owner | Replace a registered adapter's manifest, keeping its token (`privileged`) |
 
 Write actions (LT-13): Pani `start-job`/`stop-job`, Trello `move-card`, Jira `transition-issue`, all `reversible`. See `docs/runbooks/write-actions.md`. Pani's start and stop need `PANI_CLI` (path to Pani's `scripts/pani.mjs`).

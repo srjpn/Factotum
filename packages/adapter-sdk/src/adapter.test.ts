@@ -85,6 +85,22 @@ describe('FactoAdapter', () => {
     expect(calls.find((c) => c.path === '/adapters/health')?.auth).toBe('Bearer facto_adp_stored');
   });
 
+  it('seeds the state file from FACTO_ADAPTER_TOKEN without registering, and never logs it', async () => {
+    process.env['FACTO_ADAPTER_TOKEN'] = 'facto_adp_reset_token';
+    try {
+      const { adapter, stateFile, logs } = make({ adminToken: undefined });
+      await adapter.start();
+      await waitFor(() => calls.some((c) => c.path === '/adapters/health'));
+      await adapter.stop();
+      expect(calls.some((c) => c.path === '/adapters/register')).toBe(false);
+      expect(calls.find((c) => c.path === '/adapters/health')?.auth).toBe('Bearer facto_adp_reset_token');
+      expect(JSON.parse(readFileSync(stateFile, 'utf8'))).toEqual({ token: 'facto_adp_reset_token' });
+      expect(logs.join('\n')).not.toContain('facto_adp_reset_token');
+    } finally {
+      delete process.env['FACTO_ADAPTER_TOKEN'];
+    }
+  });
+
   it('needs the owner token for first registration', async () => {
     const saved = process.env['FACTO_ADMIN_TOKEN'];
     delete process.env['FACTO_ADMIN_TOKEN'];

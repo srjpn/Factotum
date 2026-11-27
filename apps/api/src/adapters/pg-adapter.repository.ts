@@ -67,4 +67,14 @@ export class PgAdapterRepository implements AdapterRepository {
     if (!row) throw new Error(`adapter ${id} not found`);
     return row;
   }
+  async resetToken(id: string, tokenHash: string, detail: string, db: Queryable = this.db) {
+    const row = await this.one(
+      `UPDATE adapters SET token_hash = $2, status = 'degraded', status_detail = $3, updated_at = now()
+       WHERE id = $1 RETURNING ${COLUMNS}`,
+      [id, tokenHash, detail],
+      db,
+    );
+    if (!row) throw new Error(`adapter ${id} not found`);
+    return row;
+  }
 }

@@ -150,6 +150,44 @@ export class AdaptersService {
     return toSummary(row);
   }
 
+  /**
+   * Replaces an adapter's service token (lost state file, suspected leak). Owner only. Risk: destructive: the old
+   * token stops working at once. Direct, not via the approval queue, like the other owner routes (ADR-010 covers
+   * callers that act on their own). Keeps the row, manifest and inventory; health becomes degraded until the
+   * adapter reports with the new token. The token is returned once and never logged.
+   */
+  async resetToken(name: string): Promise<AdapterRegistration> {
+    const entry = (outcome: NewActivity['outcome'], details: Record<string, unknown>): NewActivity => ({
+      actorType: 'owner',
+      actorId: 'owner',
+      action: 'adapter.reset',
+      risk: 'destructive',
+      targetType: 'adapter',
+      targetId: name,
+      outcome,
+      details,
+    });
+    const existing = await this.repo.findByName(name);
+    if (!existing) {
+      await this.activity.record(entry('denied', { reason: 'not registered' }));
+      throw new NotFoundException(`adapter ${name} is not registered`);
+    }
+    const token = generateToken();
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const row = await this.repo.resetToken(existing.id, hashToken(token), 'token reset, waiting for adapter', client);
+      await this.activity.record(entry('success', { previousStatus: existing.status }), client);
+      await client.query('COMMIT');
+      return { ...toSummary(row), token };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   /** Owner view of every registered adapter. Risk: read. */
   async list(): Promise<AdapterSummary[]> {
     return (await this.repo.list()).map(toSummary);
