@@ -62,3 +62,27 @@ describe('container item', () => {
     expect(INVENTORY_KINDS.container.parse({ ...c, env: ['A=1'] })).not.toHaveProperty('env');
   });
 });
+
+describe('claude kinds (LT-17c)', () => {
+  const tokens = { input: 1, output: 2, cacheWrite: 3, cacheRead: 4 };
+  const session = {
+    externalId: 'abcd1234', title: 'proj', status: 'active', statusLabel: 'active', models: ['claude-opus-5-5'],
+    startedAt: '2026-11-27T10:00:00Z', lastActivityAt: '2026-11-27T10:05:00Z', messageCount: 4, sidechainMessages: 0,
+    tokens, durationSeconds: 300, activeSeconds: 240, estimatedCostUsd: 0.01, source: 'claude',
+  };
+  const usage = { externalId: 'day:2026-11-27', title: '2026-11-27', status: 'day', models: [{ model: 'm', tokens, estimatedCostUsd: 0 }], tokens, estimatedCostUsd: 0, costIsEstimate: true, messages: 1, sessions: 1, activeSeconds: 0, source: 'claude' };
+  it('knows the kinds and accepts valid items', () => {
+    expect(isInventoryKind('claude-session')).toBe(true);
+    expect(isInventoryKind('claude-usage')).toBe(true);
+    expect(INVENTORY_KINDS['claude-session'].safeParse(session).success).toBe(true);
+    expect(INVENTORY_KINDS['claude-usage'].safeParse(usage).success).toBe(true);
+  });
+  it('rejects bad states and a non-estimate cost, and drops unknown fields (content, paths)', () => {
+    expect(INVENTORY_KINDS['claude-session'].safeParse({ ...session, status: 'busy' }).success).toBe(false);
+    expect(INVENTORY_KINDS['claude-usage'].safeParse({ ...usage, costIsEstimate: false }).success).toBe(false);
+    const parsed = INVENTORY_KINDS['claude-session'].parse({ ...session, content: 'secret prompt', cwd: '/Users/x/client' });
+    expect(parsed).not.toHaveProperty('content');
+    expect(parsed).not.toHaveProperty('cwd');
+    expect(INVENTORY_KINDS['claude-usage'].parse({ ...usage, message: 'x' })).not.toHaveProperty('message');
+  });
+});

@@ -59,8 +59,75 @@ export const ContainerItemSchema = z.object({
 });
 export type ContainerItem = z.infer<typeof ContainerItemSchema>;
 
+// ---- Claude Code activity (LT-17c). Counts, times and model names only: never message content, prompts, tool inputs or file paths. ----
+
+const nonNegInt = z.number().int().nonnegative();
+const isoDateTime = z.string().datetime({ offset: true });
+
+export const ClaudeTokensSchema = z.object({
+  input: nonNegInt,
+  output: nonNegInt,
+  cacheWrite: nonNegInt,
+  cacheRead: nonNegInt,
+});
+export type ClaudeTokens = z.infer<typeof ClaudeTokensSchema>;
+
+/** One Claude Code session (one transcript). `title` is the project label (last path segment, or a hash). */
+export const ClaudeSessionItemSchema = z.object({
+  externalId: z.string().min(1).max(200), // short session id
+  title: z.string().min(1).max(200),
+  status: z.enum(['active', 'idle']),
+  statusLabel: z.string().max(200),
+  models: z.array(z.string().max(100)).max(10),
+  startedAt: isoDateTime,
+  lastActivityAt: isoDateTime,
+  messageCount: nonNegInt,
+  sidechainMessages: nonNegInt,
+  tokens: ClaudeTokensSchema,
+  /** input + cache tokens of the latest assistant message: a context-pressure hint. */
+  contextTokens: nonNegInt.optional(),
+  durationSeconds: z.number().nonnegative(),
+  activeSeconds: z.number().nonnegative(),
+  estimatedCostUsd: z.number().nonnegative(),
+  source: slug,
+});
+export type ClaudeSessionItem = z.infer<typeof ClaudeSessionItemSchema>;
+
+export const ClaudeUsageModelSchema = z.object({
+  model: z.string().min(1).max(100),
+  tokens: ClaudeTokensSchema,
+  estimatedCostUsd: z.number().nonnegative(),
+});
+
+/** Usage for one local day (`day:YYYY-MM-DD`) or a rolling window (`window:5h`, `window:7d`). Costs are estimates from a price table. */
+export const ClaudeUsageItemSchema = z.object({
+  externalId: z.string().min(1).max(200),
+  title: z.string().min(1).max(200),
+  status: z.enum(['day', 'window']),
+  models: z.array(ClaudeUsageModelSchema).max(20),
+  tokens: ClaudeTokensSchema,
+  estimatedCostUsd: z.number().nonnegative(),
+  costIsEstimate: z.literal(true),
+  messages: nonNegInt,
+  sessions: nonNegInt,
+  activeSeconds: z.number().nonnegative().optional(),
+  cacheHitRate: z.number().min(0).max(1).optional(),
+  sidechainMessages: nonNegInt.optional(),
+  tokensPerHourLastHour: z.number().nonnegative().optional(),
+  longestSessionSeconds: z.number().nonnegative().optional(),
+  sessionsByProject: z.array(z.object({ project: z.string().max(200), sessions: nonNegInt })).max(50).optional(),
+  source: slug,
+});
+export type ClaudeUsageItem = z.infer<typeof ClaudeUsageItemSchema>;
+
 /** Kinds the core understands. An adapter may only push a kind listed in its manifest `reports`. */
-export const INVENTORY_KINDS = { task: TaskItemSchema, run: RunItemSchema, container: ContainerItemSchema } as const;
+export const INVENTORY_KINDS = {
+  task: TaskItemSchema,
+  run: RunItemSchema,
+  container: ContainerItemSchema,
+  'claude-session': ClaudeSessionItemSchema,
+  'claude-usage': ClaudeUsageItemSchema,
+} as const;
 export type InventoryKind = keyof typeof INVENTORY_KINDS;
 export const isInventoryKind = (kind: string): kind is InventoryKind => Object.hasOwn(INVENTORY_KINDS, kind);
 

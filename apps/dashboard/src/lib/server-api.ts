@@ -15,3 +15,5 @@ export const getAdapters = () => ladp(config());
 export const getRuns = () => li(config(), 'run');
 export const getContainers = () => li(config(), 'container');
 export const getApprovals = () => lap(config());
+export const getClaudeSessions = () => li(config(), 'claude-session');
+export const getClaudeUsage = () => li(config(), 'claude-usage');

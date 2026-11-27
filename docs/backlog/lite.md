@@ -38,6 +38,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-15 | Docker adapter | LT-5 | Lists local containers with health and supports restart as a reversible action. **Status: read-only listing done and checked against the local Docker ([runbook](../runbooks/docker-adapter.md)); restart arrives with LT-11** | P2 (Docker adapter) |
 | LT-16 | Notifications | LT-3 | Events such as run finished, run failed, node offline and battery low are sent through ntfy | P4 (ntfy) |
 | LT-17 | Extras | LT-5 | Any of: open PRs and CI state, AI usage and cost, Time Machine status, local dev servers. Each is its own adapter with its own acceptance criteria written when picked | none |
+| | | | **LT-17c (AI usage and cost): see [notes](#lt-17c-notes-ai-usage-and-cost-claude-code-adapter)** | |
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
 
@@ -46,6 +47,22 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 > LT-9 status (2026-11-27): done on branch `claude/lt-9-tasks-panel-373b41`. Dashboard page `/tasks` lists tasks from every task adapter via `GET /inventory?kind=task`, with a source filter and a privacy tag per row (see the dashboard runbook). No API change was needed. Not done: joining Pani runs to tasks by `ticketKey` (the data is there; left for when runs are shown) and a live check with real Jira/Trello data.
 
 > LT-13 status (2026-11-27): built on branch `claude/lt-13-writes-8b1e2e`, not merged. Core: migration `006_action_runs.sql`, module `apps/api/src/actions/` (queue, claim, result, owner endpoints), `PUT /adapters/:name/manifest`; SDK `onAction`; actions `trello.move-card`, `jira.transition-issue`, `pani.start-job`, `pani.stop-job`, all `reversible`, each with request, decision, queue, start and result in the activity log. Runbook: [write-actions.md](../runbooks/write-actions.md); contract in [adapter-contract.md](../architecture/adapter-contract.md). Tested against mock Trello and Jira, Pani fixtures with a fake CLI, and real Postgres (`actions.integration.test.ts`). **Not done:** (1) never run against real Trello, Jira or Pani; (2) the LT-12 privacy check is not wired: the hook is `apps/api/src/actions/privacy-hook.ts`, a no-op until LT-12 is merged onto this line (LT-12 exists only on its own branch; call `PrivacyService.check` there, with the target name and the task's class); (3) Pani can only start an already queued job (it kicks the runner for the whole queue) and stop is cooperative, so cancelling a running job loses its in-flight chunk. Owner to decide whether `stop-job` should be `destructive` (needing approval); (4) adapters registered before LT-13 need the one-time manifest update; (5) no dashboard UI for runs yet, only the API.
+
+## LT-17c notes: AI usage and cost (Claude Code adapter)
+
+Acceptance criteria (written first):
+
+1. `adapters/claude` is a separate read-only process, registered by manifest (`ai`, `observe`), pushing `claude-session` and `claude-usage` inventory with privacy class `client-data`; settings from env only; writes only its state file.
+2. Reads Claude Code transcripts incrementally (mtime and byte offset, streamed, never a whole file). Message content, prompts, tool inputs and file paths are never read into output, stored, logged or sent; tests prove it.
+3. Reports active sessions (active within N minutes, default 10) with tokens, models, counts and times; per-day and rolling 5-hour and 7-day usage by model; session wall-clock and active time with totals for today and 7 days; context size, cache hit rate, sidechain messages, sessions per project, longest session, burn rate.
+4. Costs are labelled estimates from one price file (`src/pricing.ts`), overridable with `CLAUDE_PRICING_FILE`; the built-in prices are placeholders to keep current.
+5. Project label is the last path segment by default, a hash with `CLAUDE_HIDE_PROJECT_NAMES=true`.
+6. Snapshots are bounded: newest 100 sessions, 30 days of usage rows.
+7. The dashboard Overview has a small Claude Code card with an empty state when the adapter is absent.
+
+Status (2026-11-27): built on branch `claude/claude-adapter-3aa45c`, not merged. Runbook: [claude-adapter.md](../runbooks/claude-adapter.md). Contracts: `claude-session` and `claude-usage` in `packages/contracts/src/inventory.ts`. Unit and end-to-end tests use synthetic fixture transcripts and a mock API.
+
+Live check (counts and totals only): against the real transcript folder the adapter read 187 transcript files in about 0.8 s on the first scan and 4 ms on the next (only appended bytes). It produced 100 sessions (5 active), 24 usage rows; today 19 sessions and about 10,600 s active time; last 5 hours 16 sessions and 1,111 messages; last 7 days 117 sessions and 7,338 messages. The cost estimates use placeholder prices and are not recorded here. **Not done:** the push to the running API was refused with 400 `unsupported inventory kind` because the running stack was built before these kinds existed and was not rebuilt (as instructed); the `claude` adapter did register there, so after the API is rebuilt, run the adapter again with `FACTO_API_URL` only. The dashboard card was verified by typecheck and unit tests, not in a browser.
 
 ## LT-5 notes
 
