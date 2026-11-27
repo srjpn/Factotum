@@ -1,17 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from './config.js';
 
+const base = {
+  FACTO_DATABASE_URL: 'postgres://u:p@db:5432/facto',
+  FACTO_ADMIN_TOKEN: 'a-long-enough-admin-token-for-tests',
+};
+
 describe('loadConfig', () => {
   it('reads settings from the environment', () => {
-    const config = loadConfig({ FACTO_PORT: '4000', FACTO_DATABASE_URL: 'postgres://u:p@db:5432/facto' });
-    expect(config).toEqual({ port: 4000, databaseUrl: 'postgres://u:p@db:5432/facto' });
+    expect(loadConfig({ ...base, FACTO_PORT: '4000' })).toEqual({
+      port: 4000,
+      databaseUrl: base.FACTO_DATABASE_URL,
+      adminToken: base.FACTO_ADMIN_TOKEN,
+    });
   });
 
   it('defaults the port', () => {
-    expect(loadConfig({ FACTO_DATABASE_URL: 'postgres://u:p@db:5432/facto' }).port).toBe(3000);
+    expect(loadConfig(base).port).toBe(3000);
   });
 
   it('requires a database URL', () => {
-    expect(() => loadConfig({})).toThrow();
+    expect(() => loadConfig({ FACTO_ADMIN_TOKEN: base.FACTO_ADMIN_TOKEN })).toThrow();
+  });
+
+  it('requires a long admin token', () => {
+    expect(() => loadConfig({ FACTO_DATABASE_URL: base.FACTO_DATABASE_URL })).toThrow();
+    expect(() => loadConfig({ ...base, FACTO_ADMIN_TOKEN: 'short' })).toThrow();
   });
 });
