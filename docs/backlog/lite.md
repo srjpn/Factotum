@@ -23,6 +23,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | | | | **Status: done.** Heartbeats are telemetry and are not logged one by one; enrolment, token creation, revocation and denied enrolment are logged. Owner routes use an interim `FACTO_ADMIN_TOKEN` until LT-6 | |
 | LT-4 | MacBook node agent | LT-3 | Agent enrols, then sends CPU, memory, disk, battery and Tailscale status on an interval; retries with backoff; a node with no heartbeat is shown offline within 2 minutes and online again when they resume | P0-5, P0-6, P1-6 |
 | LT-5 | Adapter registration | LT-3 | API validates manifests against `schemas/adapter-manifest.schema.json`; an undeclared risk level is rejected; adapters get a scoped service token and report health | P0-7 |
+| LT-5b | Inventory ingest and adapter SDK | LT-5 | `PUT /adapters/inventory/:kind` replaces an adapter's snapshot of a kind in one transaction (kind must be in the manifest `reports`, invalid items reject the whole call, privacy class stored); `GET /inventory` filters by kind, source and privacy; `@facto/adapter-sdk` registers, reports health with backoff and syncs inventory; runnable example and [runbook](../runbooks/adapter-sdk.md) | none |
 | LT-6 | Dashboard shell | LT-3 | Next.js app with local login, overview page, nodes page and activity log page, reachable only over localhost or Tailscale | P1-2, P1-5 |
 | LT-7 | Trello adapter (read-only) | LT-5 | Reports boards and cards as tasks with status, tagged `personal`; credentials are kept as secrets and never appear in logs | none |
 | LT-8 | Jira adapter (read-only) | LT-5 | Reports issues from chosen projects as tasks with status, tagged `client data`; one filter per project; credentials kept as secrets | none |
@@ -41,6 +42,10 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 ## LT-5 notes
 
 Status: done, built on LT-3. API shape is in [adapter-contract.md](../architecture/adapter-contract.md). Registration and health are covered by unit tests and by `adapters.integration.test.ts` against real Postgres (`FACTO_TEST_DATABASE_URL`).
+
+## LT-5b notes
+
+Status: done on branch `lt-5b-inventory-sdk`. Migration is `004_inventory.sql`; it depends only on `002_adapters.sql`. Not done: other inventory kinds (`run`, `container`, ...) are added to `packages/contracts/src/inventory.ts` by the adapter chunk that needs them, and the SDK has no token rotation.
 
 ## Suggested order
 

@@ -70,6 +70,15 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
 
+  packages/adapter-sdk:
+    dependencies:
+      '@facto/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   packages/contracts:
     dependencies:
       ajv:
