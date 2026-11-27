@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeSessionItemSchema, ClaudeUsageItemSchema } from '@facto/contracts';
 import { aggregate, MAX_SESSIONS, projectLabel } from './aggregate.js';
-import { assistant, SECRET, SECRET_PATH, user } from './fixtures.js';
+import { assistant, QUESTION, SECRET, SECRET_PATH, toolResult, toolUse, user } from './fixtures.js';
 import { createPricing } from './pricing.js';
 import { applyLine, newState, type FileState } from './scan.js';
 
@@ -63,5 +63,29 @@ describe('aggregate', () => {
     const r = aggregate(many, opts);
     expect(r.sessions).toHaveLength(MAX_SESSIONS);
     expect(aggregate([], opts).usage.map((u) => u.externalId)).toEqual(['day:2026-11-27', 'window:5h', 'window:7d']);
+  });
+});
+
+describe('waiting on the owner (best-effort heuristic)', () => {
+  const run = (lines: string[]) => aggregate([file('cccccccc-3', '-x-proj', lines)], opts).sessions[0]!;
+  it('is waiting when the last assistant line asks and nothing answers it', () => {
+    const s = run([user(at(10)), assistant(at(9), 'm', [1, 1, 0, 0]), toolUse(at(5), 'AskUserQuestion', 'tu_1')]);
+    expect(s).toMatchObject({ status: 'waiting', statusLabel: 'needs you', waitingTool: 'AskUserQuestion', waitingSeconds: 300 });
+    expect(ClaudeSessionItemSchema.safeParse(s).success).toBe(true);
+    const json = JSON.stringify(s);
+    expect(json).not.toContain(QUESTION);
+    expect(json).not.toContain(SECRET);
+  });
+  it('treats plan approval as waiting too', () => {
+    expect(run([toolUse(at(2), 'ExitPlanMode', 'tu_9')]).waitingTool).toBe('ExitPlanMode');
+  });
+  it('is not waiting once answered, or once the session moved on', () => {
+    expect(run([toolUse(at(5), 'AskUserQuestion', 'tu_1'), toolResult(at(4), 'tu_1')]).status).toBe('active');
+    expect(run([toolUse(at(5), 'AskUserQuestion', 'tu_1'), user(at(4))]).status).toBe('active');
+    expect(run([toolUse(at(5), 'AskUserQuestion', 'tu_1'), assistant(at(4), 'm', [1, 1, 0, 0])]).waitingTool).toBeUndefined();
+  });
+  it('ignores ordinary tool uses and abandoned questions', () => {
+    expect(run([toolUse(at(2), 'Bash', 'tu_2')]).status).toBe('active');
+    expect(run([toolUse(at(60 * 30), 'AskUserQuestion', 'tu_3')]).status).toBe('idle');
   });
 });

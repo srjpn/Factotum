@@ -17,7 +17,14 @@ export interface ParsedLine {
   sidechain: boolean;
   model?: string;
   usage?: Usage;
+  /** Names of owner-facing tool_use blocks in this assistant line (names only, from OWNER_TOOLS). */
+  askTool?: { id: string; name: string };
+  /** tool_use_ids answered by tool_result blocks in this user line. */
+  resultIds?: string[];
 }
+
+/** Tools that stop and wait for the owner. Question text and options are never read. */
+export const OWNER_TOOLS: ReadonlySet<string> = new Set(['AskUserQuestion', 'ExitPlanMode']);
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
@@ -47,6 +54,18 @@ export function parseLine(line: string): ParsedLine | null {
         cacheWrite: num(u.cache_creation_input_tokens),
         cacheRead: num(u.cache_read_input_tokens),
       };
+    }
+  }
+  const content = r.message && typeof r.message === 'object' ? (r.message as Record<string, unknown>).content : undefined;
+  if (Array.isArray(content)) {
+    for (const block of content) {
+      if (!block || typeof block !== 'object') continue;
+      const b = block as Record<string, unknown>;
+      if (type === 'assistant' && b.type === 'tool_use' && typeof b.name === 'string' && OWNER_TOOLS.has(b.name) && typeof b.id === 'string') {
+        out.askTool = { id: b.id.slice(0, 200), name: b.name };
+      } else if (type === 'user' && b.type === 'tool_result' && typeof b.tool_use_id === 'string') {
+        (out.resultIds ??= []).push(b.tool_use_id.slice(0, 200));
+      }
     }
   }
   return out;

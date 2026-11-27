@@ -14,7 +14,12 @@ export function ClaudeCard({ sessions, usage, now }: { sessions: Res<InventoryIt
   const sum = summarizeClaude(s, u, now);
   const empty = s.length === 0 && u.length === 0;
   return (
-    <Card id="claude" title="Claude Code" icon="robot" aside={empty ? undefined : <Pill tone={sum.active.length ? 'ok' : 'ne'} dot={false}>{sum.active.length} active</Pill>} error={error}>
+    <Card id="claude" title="Claude Code" icon="robot" aside={empty ? undefined : (
+      <>
+        {sum.waiting.length > 0 ? <Pill tone="warn">{sum.waiting.length} waiting</Pill> : null}{' '}
+        <Pill tone={sum.active.length ? 'ok' : 'ne'} dot={false}>{sum.active.length} active</Pill>
+      </>
+    )} error={error}>
       {empty ? (
         <p className="empty">No Claude Code data yet. It appears once the claude adapter is running and has synced.</p>
       ) : (
@@ -22,12 +27,13 @@ export function ClaudeCard({ sessions, usage, now }: { sessions: Res<InventoryIt
           <div className="row first"><span>Tokens today</span><span>{formatTokens(sum.todayTokens)} · est. {formatUsd(sum.todayCostUsd)}</span></div>
           <div className="row"><span>Session time today</span><span>{formatDuration(sum.todayActiveSeconds)}</span></div>
           <div className="row"><span>Last 5 hours</span><span>{formatTokens(sum.window5hTokens)} · est. {formatUsd(sum.window5hCostUsd)}</span></div>
-          {sum.active.slice(0, 4).map((x) => (
+          {[...sum.waiting, ...sum.active].slice(0, 5).map((x) => (
             <div className="row" key={x.externalId}>
               <span className="grow">
                 <span className="clip">{x.title} <span className="f">{x.externalId}</span></span>
-                <span className="f">{[x.models[0], `${x.messageCount} msgs`, `${formatTokens(totalTokens(x.tokens))} tokens`, `active ${formatRelativeTime(x.lastActivityAt, now)}`].filter(Boolean).join(' · ')}</span>
+                <span className="f">{[x.models[0], `${x.messageCount} msgs`, `${formatTokens(totalTokens(x.tokens))} tokens`, x.status === 'waiting' ? `waiting ${formatDuration(x.waitingSeconds ?? 0)}` : `active ${formatRelativeTime(x.lastActivityAt, now)}`].filter(Boolean).join(' · ')}</span>
               </span>
+              {x.status === 'waiting' ? <Pill tone="warn">needs you</Pill> : null}
             </div>
           ))}
           <p className="f" style={{ marginTop: '0.5rem' }}>Costs are estimates from a price table you maintain.</p>

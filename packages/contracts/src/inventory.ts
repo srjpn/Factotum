@@ -76,7 +76,7 @@ export type ClaudeTokens = z.infer<typeof ClaudeTokensSchema>;
 export const ClaudeSessionItemSchema = z.object({
   externalId: z.string().min(1).max(200), // short session id
   title: z.string().min(1).max(200),
-  status: z.enum(['active', 'idle']),
+  status: z.enum(['active', 'idle', 'waiting']),
   statusLabel: z.string().max(200),
   models: z.array(z.string().max(100)).max(10),
   startedAt: isoDateTime,
@@ -84,6 +84,9 @@ export const ClaudeSessionItemSchema = z.object({
   messageCount: nonNegInt,
   sidechainMessages: nonNegInt,
   tokens: ClaudeTokensSchema,
+  /** Set when status is `waiting`: the tool that asked (for example AskUserQuestion) and how long ago. Never the question. */
+  waitingTool: z.string().max(100).optional(),
+  waitingSeconds: z.number().nonnegative().optional(),
   /** input + cache tokens of the latest assistant message: a context-pressure hint. */
   contextTokens: nonNegInt.optional(),
   durationSeconds: z.number().nonnegative(),

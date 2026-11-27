@@ -21,6 +21,13 @@ describe('claude card helpers', () => {
     expect(summarizeClaude(sessions, usage, NOW)).toMatchObject({ todayTokens: 3500, todayCostUsd: 2.5, todayActiveSeconds: 600, window5hTokens: 0 });
     expect(summarizeClaude(sessions, usage, NOW).active).toHaveLength(1);
   });
+  it('lists waiting sessions first by wait time', () => {
+    const base = { ...sessions[0]! };
+    const w = (id: string, secs: number) => ({ ...base, externalId: id, status: 'waiting' as const, waitingTool: 'AskUserQuestion', waitingSeconds: secs });
+    const sum = summarizeClaude([base, w('w1', 10), w('w2', 99)], [], NOW);
+    expect(sum.waiting.map((s) => s.externalId)).toEqual(['w2', 'w1']);
+    expect(sum.active).toHaveLength(1);
+  });
   it('handles the adapter being absent', () => {
     expect(summarizeClaude([], [], NOW)).toMatchObject({ active: [], todayTokens: 0, todayCostUsd: 0 });
   });

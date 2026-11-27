@@ -7,6 +7,8 @@ import { addUsage, dayKey, type FileState } from './scan.js';
 export const MAX_SESSIONS = 100;
 export const MAX_DAYS = 30;
 const HOUR = 3600_000;
+/** A pending question older than this is treated as abandoned, not waiting. */
+const WAITING_MAX_MS = 24 * HOUR;
 const SOURCE = 'claude';
 
 export interface AggregateOptions {
@@ -38,19 +40,21 @@ const hitRate = (u: Usage): number | undefined => {
 function toSession(st: FileState, o: AggregateOptions): ClaudeSessionItem | null {
   if (st.firstTs === undefined || st.lastTs === undefined) return null;
   const costUsd = [...st.costTokensByModel].reduce((sum, [model, t]) => sum + o.pricing.cost(model, t), 0);
+  const waiting = st.pendingAsk && o.now - st.pendingAsk.ts <= WAITING_MAX_MS ? st.pendingAsk : undefined;
   const active = o.now - st.lastTs <= o.activeWindowMs || o.now - st.mtimeMs <= o.activeWindowMs;
   return {
     externalId: st.sessionId.slice(0, 8),
     title: projectLabel(st.projectDir, o.hideProjectNames),
-    status: active ? 'active' : 'idle',
-    statusLabel: active ? 'active' : 'idle',
+    status: waiting ? 'waiting' : active ? 'active' : 'idle',
+    statusLabel: waiting ? 'needs you' : active ? 'active' : 'idle',
+    ...(waiting ? { waitingTool: waiting.name, waitingSeconds: sec(o.now - waiting.ts) } : {}),
     models: [...st.models].sort().slice(0, 10),
     startedAt: new Date(st.firstTs).toISOString(),
     lastActivityAt: new Date(st.lastTs).toISOString(),
     messageCount: st.messages,
     sidechainMessages: st.sidechain,
     tokens: { ...st.tokens },
-    ...(st.latestContext !== undefined && active ? { contextTokens: st.latestContext } : {}),
+    ...(st.latestContext !== undefined && (active || waiting) ? { contextTokens: st.latestContext } : {}),
     durationSeconds: sec(st.lastTs - st.firstTs),
     activeSeconds: sec(st.activeMs),
     estimatedCostUsd: round(costUsd),

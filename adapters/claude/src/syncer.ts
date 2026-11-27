@@ -33,6 +33,7 @@ export class ClaudeSyncer {
     await this.deps.pushSessions(result.sessions);
     await this.deps.pushUsage(result.usage);
     const active = result.sessions.filter((s) => s.status === 'active').length;
-    this.health = { status: 'up', detail: `${result.sessions.length} sessions (${active} active)` };
+    const waiting = result.sessions.filter((s) => s.status === 'waiting').length;
+    this.health = { status: 'up', detail: `${result.sessions.length} sessions (${active} active, ${waiting} waiting)` };
   }
 }

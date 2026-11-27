@@ -27,6 +27,8 @@ export function formatTokens(n: number): string {
 export const formatUsd = (n: number): string => (n < 0.005 ? '$0' : `$${n.toFixed(n < 10 ? 2 : 0)}`);
 
 export interface ClaudeSummary {
+  /** sessions waiting on the owner, longest wait first */
+  waiting: ClaudeSessionItem[];
   active: ClaudeSessionItem[];
   todayTokens: number;
   todayCostUsd: number;
@@ -39,6 +41,7 @@ export function summarizeClaude(sessions: ClaudeSessionItem[], usage: ClaudeUsag
   const today = usage.find((u) => u.externalId === `day:${localDayKey(now)}`);
   const w5 = usage.find((u) => u.externalId === 'window:5h');
   return {
+    waiting: sessions.filter((s) => s.status === 'waiting').sort((a, b) => (b.waitingSeconds ?? 0) - (a.waitingSeconds ?? 0)),
     active: sessions.filter((s) => s.status === 'active'),
     todayTokens: today ? totalTokens(today.tokens) : 0,
     todayCostUsd: today?.estimatedCostUsd ?? 0,

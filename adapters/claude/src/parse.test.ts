@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assistant, SECRET, SECRET_PATH, user } from './fixtures.js';
+import { assistant, QUESTION, SECRET, SECRET_PATH, toolResult, toolUse, user } from './fixtures.js';
 import { parseLine } from './parse.js';
 
 describe('parseLine', () => {
@@ -25,5 +25,20 @@ describe('parseLine', () => {
   it('treats junk usage values as zero', () => {
     const l = JSON.stringify({ type: 'assistant', timestamp: '2026-11-27T10:00:00Z', message: { model: 'm', usage: { input_tokens: 'x', output_tokens: -5 } } });
     expect(parseLine(l)!.usage).toEqual({ input: 0, output: 0, cacheWrite: 0, cacheRead: 0 });
+  });
+});
+
+describe('owner-facing tool uses', () => {
+  it('extracts only the tool name and id, never the question or options', () => {
+    const p = parseLine(toolUse('2026-11-27T10:00:00Z', 'AskUserQuestion', 'tu_1'))!;
+    expect(p.askTool).toEqual({ id: 'tu_1', name: 'AskUserQuestion' });
+    expect(JSON.stringify(p)).not.toContain(QUESTION);
+    expect(JSON.stringify(p)).not.toContain(SECRET);
+    expect(parseLine(toolUse('2026-11-27T10:00:00Z', 'Bash', 'tu_2'))!.askTool).toBeUndefined();
+  });
+  it('extracts only the answered ids from a tool_result', () => {
+    const p = parseLine(toolResult('2026-11-27T10:01:00Z', 'tu_1'))!;
+    expect(p.resultIds).toEqual(['tu_1']);
+    expect(JSON.stringify(p)).not.toContain(SECRET);
   });
 });

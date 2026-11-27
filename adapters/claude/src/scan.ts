@@ -23,6 +23,8 @@ export interface FileState {
   models: Set<string>;
   tokens: Usage;
   latestContext?: number;
+  /** An owner-facing tool_use with no answer yet (best effort, from the transcript tail). */
+  pendingAsk?: { id: string; name: string; ts: number };
   /** `${bucketStartMs}|${model}` -> usage, for rolling windows and per-day totals */
   buckets: Map<string, Usage & { messages: number }>;
   /** active time per local day (YYYY-MM-DD) */
@@ -62,6 +64,8 @@ export function applyLine(st: FileState, line: string): void {
     }
   }
   if (st.lastTs === undefined || p.ts > st.lastTs) st.lastTs = p.ts;
+  if (p.type === 'assistant') st.pendingAsk = p.askTool ? { ...p.askTool, ts: p.ts } : undefined; // a later assistant line supersedes
+  else if (st.pendingAsk) st.pendingAsk = undefined; // any user line (tool_result or typed text) means the owner has responded
   if (p.type !== 'assistant' || !p.usage) return;
   const model = p.model ?? 'unknown';
   st.models.add(model);
