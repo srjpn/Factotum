@@ -36,7 +36,7 @@ FACTO_API_URL=http://<control-plane-host>:3000 FACTO_ENROLMENT_TOKEN=<token> nod
 
 ## Moving the control plane
 
-Change `FACTO_API_URL` and restart. If the new control plane has a fresh database, delete the state file and enrol again.
+Change `FACTO_API_URL` and restart (full procedure: [move-control-plane.md](move-control-plane.md)). A restored database keeps the node credential valid, so no re-enrolment is needed. If the new control plane has a fresh database, delete the state file and enrol again.
 
 ## Verification against the real API (2026-11-27)
 
