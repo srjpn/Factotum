@@ -87,6 +87,8 @@ Heartbeats are telemetry and are not logged one by one; state changes are logged
 
 Notifications (LT-16). Optional: set `FACTO_NTFY_URL` and `FACTO_NTFY_TOPIC` (and `FACTO_NTFY_TOKEN` if the server needs one) to send ntfy pushes for `node.offline`, `node.online` and denied `node.enrol` entries. Rules live in `apps/api/src/notifications/rules.ts`; each send logs `notification.send` (`read`). See `docs/runbooks/notifications.md`.
 
+Extras (LT-17). Two read-only host-process adapters, `adapters/timemachine` (kind `backup`, via `tmutil`) and `adapters/devservers` (kind `service`, via `lsof`), both privacy class `personal`; see `docs/runbooks/timemachine-adapter.md` and `docs/runbooks/devservers-adapter.md`.
+
 ## Naming
 
 The project is **Factotum**; **Facto** is the calling name used in conversation and UI copy. The CLI binary is `factotum`, with an optional `facto` alias. The unscoped npm names `factotum` and `facto` are taken, so published packages use a scope. Prefer a short neutral prefix over hard-coding the name in identifiers. See [ADR-008](docs/adr/008-project-name.md) and `docs/naming.md`.

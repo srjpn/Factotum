@@ -59,8 +59,36 @@ export const ContainerItemSchema = z.object({
 });
 export type ContainerItem = z.infer<typeof ContainerItemSchema>;
 
+/** Time Machine state on this Mac. One item per destination host; never carries paths or snapshot names. */
+export const BackupItemSchema = z.object({
+  externalId: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  status: z.enum(['ok', 'running', 'stale', 'unavailable']),
+  statusLabel: z.string().max(200),
+  lastBackupAt: z.string().datetime({ offset: true }).optional(),
+  running: z.boolean(),
+  destinationReachable: z.boolean(),
+  destinationName: z.string().max(200).optional(),
+  source: slug,
+});
+export type BackupItem = z.infer<typeof BackupItemSchema>;
+
+/** A listening TCP port of a local process. Never carries command-line arguments, environment or full paths. */
+export const ServiceItemSchema = z.object({
+  externalId: z.string().min(1).max(200), // "tcp:3000"
+  title: z.string().min(1).max(500), // process name
+  status: z.enum(['listening']),
+  statusLabel: z.string().max(200),
+  port: z.number().int().min(1).max(65535),
+  process: z.string().min(1).max(200),
+  workingDir: z.string().max(200).optional(), // last path segment only
+  bind: z.enum(['localhost', 'all']),
+  source: slug,
+});
+export type ServiceItem = z.infer<typeof ServiceItemSchema>;
+
 /** Kinds the core understands. An adapter may only push a kind listed in its manifest `reports`. */
-export const INVENTORY_KINDS = { task: TaskItemSchema, run: RunItemSchema, container: ContainerItemSchema } as const;
+export const INVENTORY_KINDS = { task: TaskItemSchema, run: RunItemSchema, container: ContainerItemSchema, backup: BackupItemSchema, service: ServiceItemSchema } as const;
 export type InventoryKind = keyof typeof INVENTORY_KINDS;
 export const isInventoryKind = (kind: string): kind is InventoryKind => Object.hasOwn(INVENTORY_KINDS, kind);
 
