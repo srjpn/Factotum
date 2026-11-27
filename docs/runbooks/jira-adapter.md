@@ -2,7 +2,7 @@
 
 The adapter (`adapters/jira`, `@facto/adapter-jira`) is a separate process. Each cycle it reads open and recently updated issues from your chosen Jira Cloud projects and pushes them to Factotum as `task` inventory with privacy class `client-data`. It never writes to Jira. The only exception is the declared write action(s) of LT-13, which run only when you ask for them through the core: see [write-actions.md](write-actions.md). Issue titles are client data: they are sent only to the Factotum API and are never logged (logs hold counts and project keys).
 
-**Live check status: pending the owner.** It is tested against a mock Jira server, and end to end against the real Factotum API and Postgres, but has not been run against a real Atlassian site because no credentials were available. Steps 1 to 5 are the live check; record the result in `docs/backlog/lite.md` (LT-8).
+**Live check status: passed on 2026-11-27** against a real Jira Cloud site (395 issues synced, adapter `up`). It is also tested against a mock Jira server and the real Factotum API and Postgres. The result is recorded in `docs/backlog/lite.md` (LT-8).
 
 ## What you need
 

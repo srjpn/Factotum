@@ -60,7 +60,9 @@ Status: done on branch `lt-5b-inventory-sdk`. Migration is `004_inventory.sql`; 
 
 Status: built on branch `lt-7-trello-adapter` (`adapters/trello`), read-only, tested against a mock Trello server and the real API. **Live check against trello.com is pending the owner**: follow [the runbook](../runbooks/trello-adapter.md) and record the result here.
 
-> LT-8 status (2026-11-27): built (`adapters/jira`, runbook `docs/runbooks/jira-adapter.md`), tested against a mock Jira and the real API. Live check against a real Jira site is pending the owner (needs site URL, email, API token, project keys).
+> LT-8 status (2026-11-27): built (`adapters/jira`, runbook `docs/runbooks/jira-adapter.md`). **Live check passed** against a real Jira Cloud site (one software project): the adapter registered, synced 395 issues (236 in progress, 99 to do, 60 done), all tagged `client-data`, reported `up` in `GET /adapters` with the detail "395 issues from 1 project(s)", and the issues show on the dashboard Tasks page and Overview. Re-syncs every 60 s. Only counts were checked; no issue content was logged. A Product Discovery project on the same site was left out on purpose.
+
+> LT-10 status (2026-11-27): built (`adapters/pani`, runbook `docs/runbooks/pani-adapter.md`). **Live check passed** against the owner's real Pani state directory: 32 jobs synced as `run` inventory (7 done, 12 partial, 7 failed, 6 other), all `client-data`, adapter `up` with "32 job(s)". It briefly showed `degraded` ("first sync pending") until the first read finished. Read-only; only status, counts and timings are reported.
 
 ## LT-11 notes
 
