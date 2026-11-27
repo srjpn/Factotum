@@ -27,6 +27,18 @@ importers:
         specifier: ^5.1.2
         version: 5.1.2(@types/node@26.6.11)(vite@8.4.0(@types/node@26.6.11))
 
+  adapters/claude:
+    dependencies:
+      '@facto/adapter-sdk':
+        specifier: workspace:*
+        version: link:../../packages/adapter-sdk
+      '@facto/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   adapters/devservers:
     dependencies:
       '@facto/adapter-sdk':

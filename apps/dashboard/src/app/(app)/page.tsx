@@ -1,17 +1,18 @@
 import { AutoRefresh } from '@/components/auto-refresh';
 import { Clock } from '@/components/clock';
+import { ClaudeCard } from '@/components/claude-card';
 import { ActivityCard, AdaptersCard, MacbookCard, RunsCard, TaskBoardCard } from '@/components/overview-cards';
 import { Pill, Tile } from '@/components/ui';
 import { adaptersPill, nodeSummary, pendingApprovals, runsToday, toRunRows } from '@/lib/overview';
-import { getActivity, getAdapters, getApprovals, getContainers, getNodes, getRuns, getTasks } from '@/lib/server-api';
+import { getActivity, getAdapters, getApprovals, getClaudeSessions, getClaudeUsage, getContainers, getNodes, getRuns, getTasks } from '@/lib/server-api';
 import { parseSource, taskSources, toTaskRows } from '@/lib/tasks';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Overview({ searchParams }: { searchParams: Promise<{ source?: string | string[] }> }) {
   const raw = (await searchParams).source;
-  const [nodes, runsRaw, tasksRaw, adapters, containers, approvals, activity] = await Promise.all([
-    getNodes(), getRuns(), getTasks(), getAdapters(), getContainers(), getApprovals(), getActivity(6),
+  const [nodes, runsRaw, tasksRaw, adapters, containers, approvals, activity, claudeSessions, claudeUsage] = await Promise.all([
+    getNodes(), getRuns(), getTasks(), getAdapters(), getContainers(), getApprovals(), getActivity(6), getClaudeSessions(), getClaudeUsage(),
   ]);
   const now = Date.now();
   const runs = runsRaw.ok ? { ok: true as const, data: toRunRows(runsRaw.data) } : runsRaw;
@@ -52,6 +53,9 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <div className="grid2">
         <TaskBoardCard tasks={tasks} sources={sources} source={source} />
         <AdaptersCard adapters={adapters} containers={containers} />
+      </div>
+      <div className="grid2">
+        <ClaudeCard sessions={claudeSessions} usage={claudeUsage} now={now} />
       </div>
       <ActivityCard entries={activity} />
     </>
