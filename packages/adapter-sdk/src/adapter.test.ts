@@ -176,3 +176,75 @@ describe('backoffDelay', () => {
     expect(backoffDelay(100, opts, () => 0.999)).toBeLessThan(60_000);
   });
 });
+
+describe('write actions (LT-13)', () => {
+  const writeManifest = { ...manifest, tier: 'control', actions: [{ name: 'do-it', permission: 'fake.do-it', risk: 'reversible' }] };
+  const run = (action: string) => ({
+    id: '11111111-1111-1111-1111-111111111111', adapter: 'fake', action, risk: 'reversible', params: { a: 1 }, targetType: null, targetId: null,
+    summary: null, status: 'running', approvalId: null, requestedBy: 'owner', requestedAt: new Date().toISOString(), startedAt: null, finishedAt: null, detail: null,
+  });
+  const serve = (queued: unknown) => {
+    override = (call) => {
+      if (call.path === '/adapters/actions/claim') return undefined;
+      return undefined;
+    };
+    server.removeAllListeners('request');
+    server.on('request', (req, res) => {
+      let raw = '';
+      req.on('data', (c) => (raw += c));
+      req.on('end', () => {
+        calls.push({ method: req.method!, path: req.url!, auth: req.headers.authorization, body: raw ? JSON.parse(raw) : undefined });
+        res.setHeader('content-type', 'application/json');
+        if (req.url === '/adapters/register') {
+          return void res.writeHead(201).end(JSON.stringify({ id: 'i', name: 'fake', version: '0.1.0', domain: 'workflows', tier: 'control', scopes: [], status: 'unknown', statusDetail: null, lastSeenAt: null, registeredAt: new Date().toISOString(), token: SERVICE_TOKEN }));
+        }
+        if (req.url === '/adapters/actions/claim') return void res.end(JSON.stringify({ run: queued }));
+        res.end('{}');
+      });
+    });
+  };
+
+  it('rejects a handler for an undeclared action', () => {
+    const { adapter } = make({ manifest: writeManifest as never, actionPollMs: 60_000 });
+    expect(() => adapter.onAction('nope', async () => undefined)).toThrow(/not declared/);
+  });
+
+  it('claims a run, runs the handler with its params and reports success', async () => {
+    serve(run('do-it'));
+    const { adapter } = make({ manifest: writeManifest as never, actionPollMs: 60_000 });
+    const seen: unknown[] = [];
+    adapter.onAction('do-it', async (params) => { seen.push(params); return { detail: 'moved' }; });
+    await adapter.start();
+    expect(await adapter.runNextAction()).toBe(true);
+    await adapter.stop();
+    expect(seen).toEqual([{ a: 1 }]);
+    const report = calls.find((c) => c.path.endsWith('/result'))!;
+    expect(report.auth).toBe(`Bearer ${SERVICE_TOKEN}`);
+    expect(report.body).toEqual({ outcome: 'success', detail: 'moved' });
+  });
+
+  it('reports a thrown error as a failure and a missing handler as a failure', async () => {
+    serve(run('do-it'));
+    const { adapter } = make({ manifest: writeManifest as never, actionPollMs: 60_000 });
+    adapter.onAction('do-it', async () => { throw new Error('boom'); });
+    await adapter.start();
+    await adapter.runNextAction();
+    serve(run('other'));
+    await adapter.runNextAction();
+    await adapter.stop();
+    const bodies = calls.filter((c) => c.path.endsWith('/result')).map((c) => c.body);
+    expect(bodies).toEqual([
+      { outcome: 'failure', detail: 'boom' },
+      { outcome: 'failure', detail: 'adapter has no handler for this action' },
+    ]);
+  });
+
+  it('returns false when nothing is queued', async () => {
+    serve(null);
+    const { adapter } = make({ manifest: writeManifest as never, actionPollMs: 60_000 });
+    adapter.onAction('do-it', async () => undefined);
+    await adapter.start();
+    expect(await adapter.runNextAction()).toBe(false);
+    await adapter.stop();
+  });
+});

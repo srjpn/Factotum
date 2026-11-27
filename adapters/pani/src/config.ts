@@ -6,6 +6,7 @@ const EnvSchema = z.object({
   FACTO_API_URL: z.string().url(),
   PANI_STATE_DIR: z.string().min(1).optional(),
   PANI_SYNC_INTERVAL_SECONDS: z.coerce.number().int().min(5).default(30),
+  PANI_CLI: z.string().min(1).optional(),
   PANI_MAX_JOBS: z.coerce.number().int().min(1).max(2000).default(200),
   FACTO_ADAPTER_STATE_FILE: z.string().min(1).default('./pani-adapter.state.json'),
   FACTO_ADMIN_TOKEN: z.string().optional(),
@@ -17,6 +18,8 @@ export interface PaniConfig {
   stateDir: string;
   syncIntervalMs: number;
   maxJobs: number;
+  /** Path to Pani's scripts/pani.mjs. Without it start and stop are refused. */
+  cliPath?: string;
   stateFile: string;
   adminToken?: string;
 }
@@ -36,6 +39,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     stateDir: e.PANI_STATE_DIR ?? defaultStateDir(),
     syncIntervalMs: e.PANI_SYNC_INTERVAL_SECONDS * 1000,
     maxJobs: e.PANI_MAX_JOBS,
+    ...(e.PANI_CLI ? { cliPath: e.PANI_CLI } : {}),
     stateFile: e.FACTO_ADAPTER_STATE_FILE,
     adminToken: e.FACTO_ADMIN_TOKEN,
   };

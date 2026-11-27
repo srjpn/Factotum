@@ -2,6 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException, UnauthorizedE
 import type pg from 'pg';
 import {
   ActionRequestSchema,
+  type ActionRequest,
   type ActionDecision,
   type Approval,
   type ApprovalStatus,
@@ -50,7 +51,7 @@ export const toApproval = (r: Row): Approval => ({
   decidedBy: r.decided_by,
 });
 
-type Requester = { type: 'owner' | 'adapter'; id: string };
+export type Requester = { type: 'owner' | 'adapter'; id: string };
 
 /** The only approver in the lite track is the single owner, who signs in with the owner credential. */
 const OWNER = 'owner';
@@ -81,7 +82,14 @@ export class ApprovalsService {
 
   async request(header: string | undefined, body: unknown): Promise<ActionDecision> {
     const who = await this.authenticateRequester(header);
-    const req = parseBody(ActionRequestSchema, body);
+    return this.evaluate(who, parseBody(ActionRequestSchema, body));
+  }
+
+  /**
+   * Applies the tier table to an already authenticated request. Pass `tx` (a client inside a transaction the
+   * caller owns) to commit the approval and its log entries together with the caller's own rows (LT-13 runs).
+   */
+  async evaluate(who: Requester, req: ActionRequest, tx?: pg.PoolClient): Promise<ActionDecision> {
     const target = { targetType: req.targetType, targetId: req.targetId };
     const details = { summary: req.summary, params: req.params };
 
@@ -94,13 +102,13 @@ export class ApprovalsService {
         ...target,
         outcome: 'success',
         details: { requestedAction: req.action, ...details },
-      });
+      }, tx);
       return { decision: 'allowed', approval: null };
     }
 
-    const client = await this.pool.connect();
+    const client = tx ?? (await this.pool.connect());
     try {
-      await client.query('BEGIN');
+      if (!tx) await client.query('BEGIN');
       const { rows } = await client.query<Row>(
         `INSERT INTO approvals (action, risk, target_type, target_id, summary, params, requester_type, requester_id, expires_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now() + make_interval(secs => $9)) RETURNING *`,
@@ -129,13 +137,13 @@ export class ApprovalsService {
         },
         client,
       );
-      await client.query('COMMIT');
+      if (!tx) await client.query('COMMIT');
       return { decision: 'pending', approval: toApproval(row) };
     } catch (err) {
-      await client.query('ROLLBACK').catch(() => undefined);
+      if (!tx) await client.query('ROLLBACK').catch(() => undefined);
       throw err;
     } finally {
-      client.release();
+      if (!tx) client.release();
     }
   }
 

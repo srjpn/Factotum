@@ -76,6 +76,12 @@ API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (used b
 | `POST /privacy/check` | owner or adapter | Privacy guard (LT-12, [privacy-check](docs/architecture/privacy-check.md)): allow or deny a target for a privacy class or inventory item; every refusal is logged as `privacy.deny` and is final (no fallback) |
 | `GET /privacy/policy` | owner | Show the allowed-target lists (`FACTO_PRIVACY_CLIENT_DATA_TARGETS`, `FACTO_PRIVACY_PERSONAL_TARGETS`) |
 | `POST /approvals/:id/approve`, `/deny` | owner | Decide a pending approval; 409 if already decided or expired. Logged as `approval.approve` / `approval.deny` with the approver |
+| `POST /actions/run` | owner | Write actions (LT-13): queue a declared adapter action; risk is read from the manifest; `reversible` runs are `queued`, `destructive`/`privileged` wait for approval |
+| `GET /actions/runs`, `GET /actions/runs/:id` | owner | List or read runs (`?status=&adapter=`) |
+| `POST /adapters/actions/claim`, `POST /adapters/actions/:id/result` | adapter | The adapter polls for its next queued run and reports `success` or `failure`; logged as `action.start` and `action.result` |
+| `PUT /adapters/:name/manifest` | owner | Replace a registered adapter's manifest, keeping its token (`privileged`) |
+
+Write actions (LT-13): Pani `start-job`/`stop-job`, Trello `move-card`, Jira `transition-issue`, all `reversible`. See `docs/runbooks/write-actions.md`. Pani's start and stop need `PANI_CLI` (path to Pani's `scripts/pani.mjs`).
 
 Heartbeats are telemetry and are not logged one by one; state changes are logged where they are detected. A monitor checks every `FACTO_STATUS_CHECK_SECONDS` (default 15) and logs `node.online` and `node.offline` once per change. A node is offline after `FACTO_OFFLINE_AFTER_SECONDS` (default 90, maximum 110) without a heartbeat. `GET /nodes` returns a live `status` of `pending`, `online`, `offline` or `revoked`.
 

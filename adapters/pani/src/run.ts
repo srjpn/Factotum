@@ -3,13 +3,28 @@ import type { AdapterHealthReport, AdapterManifest } from '@facto/contracts';
 import type { PaniConfig } from './config.js';
 import { redactingLogger } from './redact.js';
 import { PaniSyncer } from './syncer.js';
+import { nodeCli, startJob, stopJob, type PaniCli } from './actions.js';
 
 export const MANIFEST: AdapterManifest = {
   name: 'pani',
-  version: '0.1.0',
+  version: '0.2.0',
   domain: 'workflows',
-  tier: 'observe',
+  tier: 'control',
   reports: ['run'],
+  actions: [
+    {
+      name: 'start-job',
+      description: 'Start the Pani runner for an already queued job (runs every queued job). Stop the job to undo.',
+      permission: 'pani.start',
+      risk: 'reversible',
+    },
+    {
+      name: 'stop-job',
+      description: 'Cancel a queued job, or ask a running job to stop at its next check.',
+      permission: 'pani.stop',
+      risk: 'reversible',
+    },
+  ],
   health: '/healthz', // required by the manifest schema; this adapter has no HTTP server, it pushes health
 };
 
@@ -17,9 +32,11 @@ export interface PaniAdapterOverrides {
   log?: (m: string) => void;
   sdk?: Partial<AdapterOptions>;
   onFatal?: (err: Error) => void;
+  /** Replaces the Pani CLI runner (tests). */
+  cli?: PaniCli;
 }
 
-/** Wires the SDK and the sync loop. Read-only: nothing is ever written to Pani's directories. */
+/** Wires the SDK and the sync loop. Reads job files; the only writes are the declared `start-job` and `stop-job` actions, done through Pani's own CLI (LT-13). */
 export function createPaniAdapter(config: PaniConfig, overrides: PaniAdapterOverrides = {}) {
   const log = overrides.log ?? redactingLogger([config.adminToken ?? ''].filter(Boolean));
   const stop = new AbortController();
@@ -45,6 +62,10 @@ export function createPaniAdapter(config: PaniConfig, overrides: PaniAdapterOver
     push: (items): Promise<unknown> => adapter.syncInventory('run', items),
     log,
   });
+
+  const deps = { stateDir: config.stateDir, cli: overrides.cli ?? (config.cliPath ? nodeCli(config.cliPath) : undefined) };
+  adapter.onAction('start-job', (params) => startJob(deps, params));
+  adapter.onAction('stop-job', (params) => stopJob(deps, params));
 
   let loop: Promise<void> | undefined;
   const wait = (ms: number) =>

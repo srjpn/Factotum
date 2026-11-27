@@ -4,13 +4,22 @@ import type { JiraConfig } from './config.js';
 import { redactingLogger } from './redact.js';
 import { JiraSyncer } from './syncer.js';
 import { JiraClient } from './jira.js';
+import { transitionIssue } from './actions.js';
 
 export const MANIFEST: AdapterManifest = {
   name: 'jira',
-  version: '0.1.0',
+  version: '0.2.0',
   domain: 'workflows',
-  tier: 'observe',
+  tier: 'control',
   reports: ['task'],
+  actions: [
+    {
+      name: 'transition-issue',
+      description: 'Move an issue in a configured project to another workflow status through its transitions. Transition it back to undo.',
+      permission: 'jira.transition',
+      risk: 'reversible',
+    },
+  ],
   health: '/healthz', // required by the manifest schema; this adapter has no HTTP server, it pushes health
 };
 
@@ -20,7 +29,7 @@ export interface JiraAdapterOverrides {
   onFatal?: (err: Error) => void;
 }
 
-/** Wires the SDK, the Jira client and the sync loop. Read-only: nothing is ever written to Jira. */
+/** Wires the SDK, the Jira client and the sync loop. Writes to Jira only through the declared `transition-issue` action, when the core queues one (LT-13). */
 export function createJiraAdapter(config: JiraConfig, overrides: JiraAdapterOverrides = {}) {
   const jira = new JiraClient({ baseUrl: config.baseUrl, email: config.email, apiToken: config.apiToken });
   const log =
@@ -51,6 +60,8 @@ export function createJiraAdapter(config: JiraConfig, overrides: JiraAdapterOver
     push: (items): Promise<unknown> => adapter.syncInventory('task', items),
     log,
   });
+
+  adapter.onAction('transition-issue', (params) => transitionIssue(jira, config.projectKeys, params));
 
   let loop: Promise<void> | undefined;
   const wait = (ms: number) =>

@@ -67,6 +67,28 @@ Adapters push what they observe with `PUT /adapters/inventory/:kind`, authentica
 - **Storage.** Table `inventory_items`, unique on adapter, kind and external id. `observed_at` moves on every sync that still contains the item; `updated_at` moves only when its content changed.
 - **Activity log.** A sync that added, updated or removed something writes one `inventory.sync` entry (risk `read`, actor the adapter) with counts only, never titles or data. A sync with no change writes nothing.
 
+## Running actions (lite track, LT-13)
+
+Write actions follow the one-door rule: the core never calls an adapter and adapters never talk to each other. The core keeps a queue; the adapter polls it with its own token.
+
+1. The manifest declares each action (`name`, `permission`, `risk`). The core reads the risk **from the registered manifest**, so a caller cannot understate it (this closes the gap in [ADR-010](../adr/010-approval-policy-lite.md) item 5 for runs).
+2. The owner calls `POST /actions/run` `{adapter, action, params, targetType?, targetId?, summary?}`. The core checks the action is declared, applies the tier table through the approvals service (`reversible` runs are `queued`; `destructive` and `privileged` become `awaiting_approval` with a pending approval) and stores the run. Only the owner can create runs; an adapter cannot queue work for another adapter. A marked LT-12 hook (`apps/api/src/actions/privacy-hook.ts`) runs before anything is queued.
+3. The adapter calls `POST /adapters/actions/claim`. The core returns the oldest queued run for that adapter, once, as `running`, or `{run: null}`. A run is never handed out twice.
+4. The adapter executes against its own tool and calls `POST /adapters/actions/:id/result` `{outcome: "success" | "failure", detail?}`. Only the claiming adapter can report, once.
+5. The run row stores intent and outcome only (`detail` is a short text, no tool payloads or secrets).
+
+Run states: `awaiting_approval` → `queued` → `running` → `succeeded` | `failed`; `cancelled` when the approval is denied or expires. Settling is lazy (on every list, get and claim): approved → queued, denied or expired → cancelled, a queued run not claimed within 1 h → `failed`, a running run with no result after 10 min → `failed` (never redelivered, since it may have half run).
+
+Activity log, one entry each: `action.allow` or `approval.request` (request and decision), `approval.approve` / `approval.deny`, `action.queue` (actor `system`), `action.cancel`, `action.start` (actor the adapter), `action.result` (outcome `success` or `failure`). Every entry carries `runId` and `requestedAction` (`<adapter>.<action>`), never params.
+
+| Endpoint | Auth |
+| --- | --- |
+| `POST /actions/run`, `GET /actions/runs?status=&adapter=`, `GET /actions/runs/:id` | Owner |
+| `POST /adapters/actions/claim`, `POST /adapters/actions/:id/result` | Adapter service token |
+| `PUT /adapters/:name/manifest` | Owner. Replaces a registered adapter's manifest and scopes, keeping its token (privileged, logged as `adapter.manifest.update`). Needed when an adapter gains actions |
+
+The SDK wraps the adapter side: `adapter.onAction(name, handler)` before `start()`; it polls every 5 s (`actionPollMs`), runs the handler and reports. A thrown error becomes a `failure` with its message, so handlers must not put secrets in errors.
+
 ## Adapter SDK
 
 `@facto/adapter-sdk` (`packages/adapter-sdk`) wraps registration, health reporting with exponential backoff and jitter (capped at about 60 s), and inventory sync, so adapters do not reimplement them. It stores the service token in a mode 0600 state file and stops itself on a 401. Usage and steps are in [the SDK runbook](../runbooks/adapter-sdk.md).

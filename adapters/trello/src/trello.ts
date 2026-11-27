@@ -45,7 +45,7 @@ export interface TrelloClientOptions {
 
 const MAX_WAIT_MS = 60_000;
 
-/** Read-only Trello client. Credentials travel in the Authorization header, never in the URL. */
+/** Trello client. Credentials travel in the Authorization header, never in the URL. Writes: `moveCard` only (LT-13). */
 export class TrelloClient {
   private readonly doFetch: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
@@ -56,9 +56,14 @@ export class TrelloClient {
   }
 
   private async get<T>(path: string): Promise<T> {
+    return this.call<T>('GET', path);
+  }
+
+  private async call<T>(method: 'GET' | 'PUT', path: string): Promise<T> {
     const retries = this.opts.maxRetries ?? 3;
     for (let attempt = 0; ; attempt++) {
       const res = await this.doFetch(`${this.opts.base}${path}`, {
+        method,
         headers: {
           authorization: `OAuth oauth_consumer_key="${this.opts.apiKey}", oauth_token="${this.opts.token}"`,
           accept: 'application/json',
@@ -87,5 +92,17 @@ export class TrelloClient {
     return this.get(
       `/1/boards/${encodeURIComponent(boardId)}/cards?fields=name,idList,url,dateLastActivity,closed,idMembers`,
     );
+  }
+
+  /** Where a card is now and which board it belongs to. */
+  card(cardId: string): Promise<{ id: string; idBoard: string; idList: string }> {
+    return this.get(`/1/cards/${encodeURIComponent(cardId)}?fields=idBoard,idList`);
+  }
+  list(listId: string): Promise<{ id: string; idBoard: string }> {
+    return this.get(`/1/lists/${encodeURIComponent(listId)}?fields=idBoard`);
+  }
+  /** Moves a card to another list. Only `idList` is sent, so the card cannot change board through this call. */
+  async moveCard(cardId: string, listId: string): Promise<void> {
+    await this.call('PUT', `/1/cards/${encodeURIComponent(cardId)}?idList=${encodeURIComponent(listId)}`);
   }
 }

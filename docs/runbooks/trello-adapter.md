@@ -1,6 +1,6 @@
-# Runbook: run the Trello adapter (read-only)
+# Runbook: run the Trello adapter (read, plus one write action)
 
-The adapter (`adapters/trello`, `@facto/adapter-trello`) is a separate process. Each cycle it reads the lists and open cards of your chosen boards from Trello and pushes them to Factotum as `task` inventory with privacy class `personal`. It never writes to Trello.
+The adapter (`adapters/trello`, `@facto/adapter-trello`) is a separate process. Each cycle it reads the lists and open cards of your chosen boards from Trello and pushes them to Factotum as `task` inventory with privacy class `personal`. It never writes to Trello. The only exception is the declared write action(s) of LT-13, which run only when you ask for them through the core: see [write-actions.md](write-actions.md).
 
 **Live check status: pending the owner.** The adapter is tested against a mock Trello server and a real Factotum API with a mock Trello, but has not been run against trello.com because no credentials were available. Steps 1 to 5 below are the live check; record the result in `docs/backlog/lite.md` (LT-7).
 

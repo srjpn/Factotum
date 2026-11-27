@@ -45,6 +45,8 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 
 > LT-9 status (2026-11-27): done on branch `claude/lt-9-tasks-panel-373b41`. Dashboard page `/tasks` lists tasks from every task adapter via `GET /inventory?kind=task`, with a source filter and a privacy tag per row (see the dashboard runbook). No API change was needed. Not done: joining Pani runs to tasks by `ticketKey` (the data is there; left for when runs are shown) and a live check with real Jira/Trello data.
 
+> LT-13 status (2026-11-27): built on branch `claude/lt-13-writes-8b1e2e`, not merged. Core: migration `006_action_runs.sql`, module `apps/api/src/actions/` (queue, claim, result, owner endpoints), `PUT /adapters/:name/manifest`; SDK `onAction`; actions `trello.move-card`, `jira.transition-issue`, `pani.start-job`, `pani.stop-job`, all `reversible`, each with request, decision, queue, start and result in the activity log. Runbook: [write-actions.md](../runbooks/write-actions.md); contract in [adapter-contract.md](../architecture/adapter-contract.md). Tested against mock Trello and Jira, Pani fixtures with a fake CLI, and real Postgres (`actions.integration.test.ts`). **Not done:** (1) never run against real Trello, Jira or Pani; (2) the LT-12 privacy check is not wired: the hook is `apps/api/src/actions/privacy-hook.ts`, a no-op until LT-12 is merged onto this line (LT-12 exists only on its own branch; call `PrivacyService.check` there, with the target name and the task's class); (3) Pani can only start an already queued job (it kicks the runner for the whole queue) and stop is cooperative, so cancelling a running job loses its in-flight chunk. Owner to decide whether `stop-job` should be `destructive` (needing approval); (4) adapters registered before LT-13 need the one-time manifest update; (5) no dashboard UI for runs yet, only the API.
+
 ## LT-5 notes
 
 Status: done, built on LT-3. API shape is in [adapter-contract.md](../architecture/adapter-contract.md). Registration and health are covered by unit tests and by `adapters.integration.test.ts` against real Postgres (`FACTO_TEST_DATABASE_URL`).
@@ -79,5 +81,5 @@ The smallest useful slice is LT-1 to LT-4 and LT-6: a dashboard that shows your 
 
 - Which source does Pani pull tickets from: Jira only, or Trello too?
 - Does Jira need one filter per client project?
-- ~~Pani exposes its state through an HTTP API~~ Corrected in LT-10: Pani has a CLI and MCP tools but no HTTP API. Its state is files under `~/.config/openhands-orchestrator/`, which the adapter reads. LT-13 (start and stop) will need to call Pani's CLI or MCP tools, which needs its own decision.
+- ~~Pani exposes its state through an HTTP API~~ Corrected in LT-10: Pani has a CLI and MCP tools but no HTTP API. Its state is files under `~/.config/openhands-orchestrator/`, which the adapter reads. Decided in LT-13: start and stop call Pani's own CLI (`pani kick`, `pani cancel`) through `PANI_CLI`; the adapter never writes Pani's files.
 - Is Pulse's state readable yet, or is it a stub only?

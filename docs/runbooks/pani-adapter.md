@@ -1,6 +1,6 @@
-# Runbook: run the Pani adapter (read-only)
+# Runbook: run the Pani adapter (read, plus one write action)
 
-The adapter (`adapters/pani`, `@facto/adapter-pani`) is a separate process. Each cycle it reads Pani's job files and pushes them to Factotum as `run` inventory with privacy class `client-data` (Pani works on client repositories). It never writes to Pani's directories, never starts jobs and never runs Pani's scripts.
+The adapter (`adapters/pani`, `@facto/adapter-pani`) is a separate process. Each cycle it reads Pani's job files and pushes them to Factotum as `run` inventory with privacy class `client-data` (Pani works on client repositories). It never writes to Pani's directories, never starts jobs and never runs Pani's scripts. The only exception is the declared write action(s) of LT-13, which run only when you ask for them through the core: see [write-actions.md](write-actions.md).
 
 ## How Pani is read
 

@@ -16,6 +16,10 @@ Every action declares a risk level (CLAUDE.md rule 7). The lite track needs `des
 5. **Trusted risk declaration (known gap).** The caller states the action's risk, so a misbehaving adapter could understate it. This is acceptable while adapters are the owner's own code. Before third-party adapters, the manifest should list its actions with fixed risk levels and the core should check requests against it.
 6. **Approval is not bound to parameters beyond what was stored.** Consuming an approval (single use, tied to the stored `params`) is for LT-13 to define when the first write action exists.
 
+## LT-13 follow-up (2026-11-27)
+
+Items 5 and 6 are resolved for runs queued through `POST /actions/run`: the risk is read from the adapter's registered manifest (the caller cannot state it), and the params are stored with the run, so the adapter executes exactly what the owner approved and a run is handed out once. `POST /actions/request` for callers that act on their own still trusts the declared risk. Status stays Proposed until the owner accepts.
+
 ## Consequences
 
 - Dashboard approval needs no extra auth beyond the owner login.
