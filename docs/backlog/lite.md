@@ -33,7 +33,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-12 | Privacy class check | LT-9, LT-10 | A run for a `client data` task is refused if its target is outside the allowed list; the refusal is logged. No fallback crosses the boundary | ADR-007 (minimal) |
 | LT-13 | Write actions | LT-11, and the matching read adapter | Pani start and stop, Trello card move, Jira transition, each as a reversible action through the policy path with an activity-log entry | none |
 | LT-14 | Pulse stub | LT-5 | Pulse registers as an adapter and reports up or down, version and last activity. Depth is added when Pulse is ready | none |
-| LT-15 | Docker adapter | LT-5 | Lists local containers with health and supports restart as a reversible action | P2 (Docker adapter) |
+| LT-15 | Docker adapter | LT-5 | Lists local containers with health and supports restart as a reversible action. **Status: read-only listing done and checked against the local Docker ([runbook](../runbooks/docker-adapter.md)); restart arrives with LT-11** | P2 (Docker adapter) |
 | LT-16 | Notifications | LT-3 | Events such as run finished, run failed, node offline and battery low are sent through ntfy | P4 (ntfy) |
 | LT-17 | Extras | LT-5 | Any of: open PRs and CI state, AI usage and cost, Time Machine status, local dev servers. Each is its own adapter with its own acceptance criteria written when picked | none |
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |

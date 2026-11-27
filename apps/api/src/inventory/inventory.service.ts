@@ -44,6 +44,15 @@ function flatten(item: { externalId: string; title: string; status: string; url?
   return { externalId, title, status, url: url ?? null, data };
 }
 
+/** Kinds whose display name is not called `title` are mapped to the title column here. */
+function toStoredShape(kind: InventoryKind, parsed: Record<string, unknown>): StoredItem {
+  if (kind === 'container') {
+    const { name, ...rest } = parsed;
+    return flatten({ ...rest, title: name } as Parameters<typeof flatten>[0]);
+  }
+  return flatten(parsed as Parameters<typeof flatten>[0]);
+}
+
 // Key order does not matter to jsonb, so compare canonically.
 const canon = (v: unknown): string =>
   JSON.stringify(v, (_k, val) =>
@@ -82,7 +91,7 @@ export class InventoryService {
         for (const issue of parsed.error.issues) errors.push(`items.${i}.${issue.path.join('.')}: ${issue.message}`);
         return;
       }
-      const item = flatten(parsed.data);
+      const item = toStoredShape(kind as InventoryKind, parsed.data as Record<string, unknown>);
       if (seen.has(item.externalId)) errors.push(`items.${i}.externalId: duplicate "${item.externalId}"`);
       seen.add(item.externalId);
       if (Buffer.byteLength(JSON.stringify(item.data)) > INVENTORY_MAX_DATA_BYTES) {
