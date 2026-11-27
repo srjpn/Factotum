@@ -47,7 +47,7 @@ export const listActivity = (c: ApiConfig, limit: number): Promise<ApiResult<Act
 export const listTasks = (c: ApiConfig): Promise<ApiResult<InventoryItem[]>> =>
   apiGet(c, '/inventory?kind=task', z.array(InventoryItemSchema));
 
-export const listInventory = (c: ApiConfig, kind: 'task' | 'run' | 'container' | 'claude-session' | 'claude-usage'): Promise<ApiResult<InventoryItem[]>> =>
+export const listInventory = (c: ApiConfig, kind: 'task' | 'run' | 'container' | 'backup' | 'service' | 'claude-session' | 'claude-usage'): Promise<ApiResult<InventoryItem[]>> =>
   apiGet(c, `/inventory?kind=${kind}`, z.array(InventoryItemSchema));
 
 export const listAdapters = (c: ApiConfig): Promise<ApiResult<AdapterSummary[]>> => apiGet(c, '/adapters', z.array(AdapterSummarySchema));
