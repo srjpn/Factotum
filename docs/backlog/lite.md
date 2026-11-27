@@ -42,6 +42,25 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
 
+> LT-17 notes (2026-11-27): picked two extras that need no credentials and read only local state. Each is its own adapter on the SDK, host process, privacy class `personal`, tier `observe`, no actions.
+>
+> **Time Machine (`adapters/timemachine`, kind `backup`).** Acceptance:
+> 1. One `backup` item: last backup time, whether a backup is running, whether the destination is reachable, status `ok`, `running`, `stale` (older than `TIMEMACHINE_STALE_HOURS`, default 48) or `unavailable`.
+> 2. Uses only `tmutil latestbackup`, `tmutil status` and `tmutil destinationinfo` (read-only). Never starts, stops or changes a backup.
+> 3. If `tmutil` fails (for example no Full Disk Access), health is `degraded` with a clear detail, nothing crashes, and inventory is not deleted (no push on failure).
+> 4. Tests use fake `tmutil` output only.
+>
+> **Local dev servers (`adapters/devservers`, kind `service`).** Acceptance:
+> 1. One `service` item per listening TCP port (`lsof -nP -iTCP -sTCP:LISTEN`) bound to localhost or all interfaces; other bindings are dropped.
+> 2. Reports port, process name and working directory name (last path segment) only. Never command-line arguments or environment; `lsof` is called without `-c`/`ps`-style argument output.
+> 3. A configurable ignore list (`DEVSERVERS_IGNORE_PORTS`, `DEVSERVERS_IGNORE_PROCESSES`) removes matches; default ignores system processes and the Factotum stack's own ports are left to the owner to list.
+> 4. If `lsof` fails, health is `degraded` and nothing is pushed.
+> 5. Tests use fake `lsof` output only.
+>
+> Dashboard: no new card; both adapters appear on the Overview Adapters card with their health detail.
+>
+> Live check (2026-11-27, this branch's API on a throwaway Postgres, port 3190, because the running Compose API predates the new kinds and rejects them with 400): both adapters registered, `backup` count 1 (status `unavailable`, no mounted destination on this Mac), `service` count 41 after default and port filters. Health reads `degraded: first sync pending` until the first 30 s health report, as for Docker. Status: done; the Compose stack needs a rebuild to pick up the new kinds.
+
 > LT-12 status (2026-11-27): done on branch `claude/lt-12-privacy-e4a9f1`. `POST /privacy/check` and `PrivacyService.check` allow or deny a target per privacy class from env lists (client-data fails closed); every refusal is logged as `privacy.deny`; no fallback. See [privacy-check](../architecture/privacy-check.md). LT-13 must call it before acting. Not done: dashboard display, and wiring the check into `POST /actions/request` (no task or run context there yet).
 
 > LT-9 status (2026-11-27): done on branch `claude/lt-9-tasks-panel-373b41`. Dashboard page `/tasks` lists tasks from every task adapter via `GET /inventory?kind=task`, with a source filter and a privacy tag per row (see the dashboard runbook). No API change was needed. Not done: joining Pani runs to tasks by `ticketKey` (the data is there; left for when runs are shown) and a live check with real Jira/Trello data.
