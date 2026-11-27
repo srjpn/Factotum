@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseTargets, type PrivacyPolicy } from './privacy/privacy.js';
 
 const ConfigSchema = z.object({
   FACTO_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
@@ -14,6 +15,10 @@ const ConfigSchema = z.object({
   FACTO_NTFY_URL: z.string().url().optional(),
   FACTO_NTFY_TOPIC: z.string().min(1).optional(),
   FACTO_NTFY_TOKEN: z.string().min(1).optional(),
+  // Privacy policy (LT-12): comma-separated targets where work of each class may run. `*` = any.
+  // client-data has no default, so nothing is allowed until the owner lists targets (fail closed).
+  FACTO_PRIVACY_CLIENT_DATA_TARGETS: z.string().optional(),
+  FACTO_PRIVACY_PERSONAL_TARGETS: z.string().optional(),
 });
 
 export type Config = {
@@ -22,6 +27,7 @@ export type Config = {
   adminToken: string;
   offlineAfterSeconds: number;
   statusCheckSeconds: number;
+  privacy: PrivacyPolicy;
   ntfy?: { url: string; topic: string; token?: string };
 };
 
@@ -45,6 +51,10 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     adminToken: parsed.FACTO_ADMIN_TOKEN,
     offlineAfterSeconds: parsed.FACTO_OFFLINE_AFTER_SECONDS,
     statusCheckSeconds: parsed.FACTO_STATUS_CHECK_SECONDS,
+    privacy: {
+      'client-data': parseTargets(parsed.FACTO_PRIVACY_CLIENT_DATA_TARGETS, []),
+      personal: parseTargets(parsed.FACTO_PRIVACY_PERSONAL_TARGETS, '*'),
+    },
     ...(ntfy ? { ntfy } : {}),
   };
 }

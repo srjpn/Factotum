@@ -14,11 +14,18 @@ describe('loadConfig', () => {
       adminToken: base.FACTO_ADMIN_TOKEN,
       offlineAfterSeconds: 90,
       statusCheckSeconds: 15,
+      privacy: { 'client-data': [], personal: '*' },
     });
   });
 
   it('keeps the offline window inside the 2 minute rule', () => {
     expect(() => loadConfig({ ...base, FACTO_OFFLINE_AFTER_SECONDS: '300' })).toThrow();
+  });
+
+  it('reads privacy targets and fails closed for client-data', () => {
+    expect(loadConfig({ ...base, FACTO_PRIVACY_CLIENT_DATA_TARGETS: 'macbook, pani ' }).privacy['client-data']).toEqual(['macbook', 'pani']);
+    expect(loadConfig({ ...base, FACTO_PRIVACY_PERSONAL_TARGETS: 'macbook' }).privacy.personal).toEqual(['macbook']);
+    expect(loadConfig({ ...base, FACTO_PRIVACY_CLIENT_DATA_TARGETS: '' }).privacy['client-data']).toEqual([]);
   });
 
   it('defaults the port', () => {

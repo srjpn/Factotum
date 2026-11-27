@@ -73,6 +73,8 @@ API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (used b
 | `POST /actions/request` | owner or adapter | Policy path (LT-11, [ADR-010](docs/adr/010-approval-policy-lite.md)): `read` and `reversible` return `allowed`; `destructive` and `privileged` create a pending approval (`pending`, 24 h expiry). The core never runs the action |
 | `GET /approvals` | owner | List approvals, pending first (`?status=`) |
 | `GET /approvals/:id` | owner or the requesting adapter | Poll one approval's status |
+| `POST /privacy/check` | owner or adapter | Privacy guard (LT-12, [privacy-check](docs/architecture/privacy-check.md)): allow or deny a target for a privacy class or inventory item; every refusal is logged as `privacy.deny` and is final (no fallback) |
+| `GET /privacy/policy` | owner | Show the allowed-target lists (`FACTO_PRIVACY_CLIENT_DATA_TARGETS`, `FACTO_PRIVACY_PERSONAL_TARGETS`) |
 | `POST /approvals/:id/approve`, `/deny` | owner | Decide a pending approval; 409 if already decided or expired. Logged as `approval.approve` / `approval.deny` with the approver |
 | `POST /actions/run` | owner | Write actions (LT-13): queue a declared adapter action; risk is read from the manifest; `reversible` runs are `queued`, `destructive`/`privileged` wait for approval |
 | `GET /actions/runs`, `GET /actions/runs/:id` | owner | List or read runs (`?status=&adapter=`) |

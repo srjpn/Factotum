@@ -10,6 +10,10 @@ const item = (over: Partial<InventoryItem> & { data?: Record<string, unknown> })
 });
 
 describe('tasks', () => {
+  it('reads status from the item when data omits it (real API shape)', () => {
+    const [r] = toTaskRows([item({ status: 'in-progress', data: { statusLabel: 'In Progress', source: 'jira' } })]);
+    expect(r?.status).toBe('in-progress');
+  });
   it('maps task items and keeps privacy class', () => {
     const [r] = toTaskRows([item({})]);
     expect(r).toMatchObject({ title: 'Fix it', source: 'jira', project: 'ABC', assignee: 'sam', privacyClass: 'client-data', url: 'https://x.test/ABC-1' });
