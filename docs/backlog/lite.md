@@ -56,6 +56,10 @@ Status: built on branch `lt-7-trello-adapter` (`adapters/trello`), read-only, te
 
 > LT-8 status (2026-11-27): built (`adapters/jira`, runbook `docs/runbooks/jira-adapter.md`), tested against a mock Jira and the real API. Live check against a real Jira site is pending the owner (needs site URL, email, API token, project keys).
 
+## LT-11 notes
+
+Status (2026-11-27): built. Migration `005_approvals.sql`, module `apps/api/src/approvals/`, tier table `apps/api/src/policy/policy.ts`, dashboard page `/approvals`. Request, approve, deny and expire are logged; unit and integration tests (`approvals.integration.test.ts`) pass against real Postgres. Design is in [ADR-010](../adr/010-approval-policy-lite.md) (Proposed, needs owner acceptance). Not done: no action consumes an approval yet (LT-13 does), and the caller's declared risk is trusted (ADR-010 item 5). Not checked by hand in a browser.
+
 ## Suggested order
 
 1. LT-1, LT-2, LT-3.

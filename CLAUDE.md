@@ -70,6 +70,10 @@ API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (used b
 | `POST /nodes/heartbeat` | node | Send metrics; 204, or 401 for an unknown or revoked credential |
 | `GET /nodes`, `POST /nodes/:id/revoke` | owner | List nodes; revoke one (`destructive`) |
 | `GET /activity` | owner | Read the append-only activity log |
+| `POST /actions/request` | owner or adapter | Policy path (LT-11, [ADR-010](docs/adr/010-approval-policy-lite.md)): `read` and `reversible` return `allowed`; `destructive` and `privileged` create a pending approval (`pending`, 24 h expiry). The core never runs the action |
+| `GET /approvals` | owner | List approvals, pending first (`?status=`) |
+| `GET /approvals/:id` | owner or the requesting adapter | Poll one approval's status |
+| `POST /approvals/:id/approve`, `/deny` | owner | Decide a pending approval; 409 if already decided or expired. Logged as `approval.approve` / `approval.deny` with the approver |
 
 Heartbeats are telemetry and are not logged one by one; state changes are logged where they are detected. A monitor checks every `FACTO_STATUS_CHECK_SECONDS` (default 15) and logs `node.online` and `node.offline` once per change. A node is offline after `FACTO_OFFLINE_AFTER_SECONDS` (default 90, maximum 110) without a heartbeat. `GET /nodes` returns a live `status` of `pending`, `online`, `offline` or `revoked`.
 
