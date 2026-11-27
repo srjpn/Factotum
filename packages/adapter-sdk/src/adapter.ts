@@ -70,11 +70,16 @@ export class FactoAdapter {
     this.log = opts.log ?? ((m) => console.log(`[${opts.manifest.name}] ${m}`));
   }
 
-  /** Registers if no token is stored, then starts reporting health in the background. */
+  /** Uses the stored token, else FACTO_ADAPTER_TOKEN, else registers; then then starts reporting health in the background. */
   async start(): Promise<void> {
     this.token = await loadToken(this.opts.stateFile);
     if (this.token) {
       this.log('using stored service token');
+    } else if (process.env['FACTO_ADAPTER_TOKEN']) {
+      // A token issued by `POST /adapters/:name/reset`; used only when there is no state file. Never logged.
+      this.token = process.env['FACTO_ADAPTER_TOKEN'];
+      await saveToken(this.opts.stateFile, this.token);
+      this.log('using FACTO_ADAPTER_TOKEN; service token stored');
     } else {
       const admin = this.opts.adminToken ?? process.env['FACTO_ADMIN_TOKEN'];
       if (!admin) throw new Error('no stored token: set FACTO_ADMIN_TOKEN (or adminToken) for first registration');

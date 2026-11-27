@@ -108,4 +108,36 @@ describe.skipIf(!url)('adapter registration API', () => {
     const list = await call('GET', '/adapters', { token: ADMIN });
     expect(list.json.find((a: { name: string }) => a.name === 'second').status).toBe('up');
   });
+
+  it('resets a token: new token works, old gets 401, entry logged without secrets', async () => {
+    const reg = await call('POST', '/adapters/register', { token: ADMIN, body: { ...manifest, name: 'resettable' } });
+    await call('POST', '/adapters/health', { token: reg.json.token, body: { status: 'up' } });
+
+    expect((await call('POST', '/adapters/resettable/reset')).status).toBe(401);
+    expect((await call('POST', '/adapters/resettable/reset', { token: 'wrong' })).status).toBe(401);
+    expect((await call('POST', '/adapters/ghost/reset', { token: ADMIN })).status).toBe(404);
+
+    const reset = await call('POST', '/adapters/resettable/reset', { token: ADMIN });
+    expect(reset.status).toBe(200);
+    expect(reset.json.token).toMatch(/^facto_adp_/);
+    expect(reset.json.token).not.toBe(reg.json.token);
+    expect(reset.json.status).toBe('degraded');
+
+    expect((await call('POST', '/adapters/health', { token: reg.json.token, body: { status: 'up' } })).status).toBe(401);
+    const ok = await call('POST', '/adapters/health', { token: reset.json.token, body: { status: 'up' } });
+    expect(ok.status).toBe(200);
+    expect(ok.json.status).toBe('up');
+
+    const row = await pool.query('SELECT token_hash FROM adapters WHERE name = $1', ['resettable']);
+    expect(row.rows[0].token_hash).toHaveLength(64);
+    expect(row.rows[0].token_hash).not.toBe(reset.json.token);
+
+    const log = await call('GET', '/activity?limit=500', { token: ADMIN });
+    const keys = log.json.map((e: { action: string; risk: string; outcome: string; targetId: string }) => `${e.action}:${e.risk}:${e.outcome}:${e.targetId}`);
+    expect(keys).toContain('adapter.reset:destructive:success:resettable');
+    expect(keys).toContain('adapter.reset:destructive:denied:ghost');
+    const text = JSON.stringify(log.json);
+    expect(text).not.toContain(reset.json.token);
+    expect(text).not.toContain(reg.json.token);
+  });
 });
