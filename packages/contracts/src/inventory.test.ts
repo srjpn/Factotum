@@ -1,18 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { ContainerItemSchema, INVENTORY_KINDS, isInventoryKind } from './inventory.js';
+import { INVENTORY_KINDS, isInventoryKind } from './inventory.js';
 
-const ok = { externalId: 'abc123', name: 'web', image: 'nginx:1', status: 'running', statusLabel: 'running', source: 'docker' };
+const ok = { externalId: '1', title: 'T', status: 'todo', statusLabel: 'To do', source: 'trello' };
 
-describe('container inventory kind', () => {
-  it('is a known kind', () => {
-    expect(isInventoryKind('container')).toBe(true);
-    expect(INVENTORY_KINDS.container).toBe(ContainerItemSchema);
+describe('task item', () => {
+  it('accepts a minimal and a full item', () => {
+    expect(INVENTORY_KINDS.task.safeParse(ok).success).toBe(true);
+    expect(
+      INVENTORY_KINDS.task.safeParse({ ...ok, url: 'https://x.test/1', project: 'p', assignee: 'a', updatedAt: '2026-11-27T10:00:00Z' }).success,
+    ).toBe(true);
   });
-  it('accepts a minimal and a full item, rejects a bad status, strips unknown fields', () => {
-    expect(ContainerItemSchema.safeParse(ok).success).toBe(true);
-    const full = { ...ok, health: 'healthy', composeProject: 'facto', startedAt: '2026-11-27T10:00:00Z', ports: ['127.0.0.1:3000->3000/tcp'] };
-    expect(ContainerItemSchema.safeParse(full).success).toBe(true);
-    expect(ContainerItemSchema.safeParse({ ...ok, status: 'paused' }).success).toBe(false);
-    expect(ContainerItemSchema.parse({ ...ok, env: ['A=1'] })).not.toHaveProperty('env');
+  it('rejects a bad status, a missing title and a bad url', () => {
+    expect(INVENTORY_KINDS.task.safeParse({ ...ok, status: 'blocked' }).success).toBe(false);
+    expect(INVENTORY_KINDS.task.safeParse({ ...ok, title: '' }).success).toBe(false);
+    expect(INVENTORY_KINDS.task.safeParse({ ...ok, url: 'nope' }).success).toBe(false);
+  });
+  it('knows its kinds', () => {
+    expect(isInventoryKind('task')).toBe(true);
+    expect(isInventoryKind('toString')).toBe(false);
+  });
+});
+
+describe('container item', () => {
+  const c = { externalId: 'abc123', name: 'web', image: 'nginx:1', status: 'running', statusLabel: 'running', source: 'docker' };
+  it('is a known kind and accepts minimal and full items', () => {
+    expect(isInventoryKind('container')).toBe(true);
+    expect(INVENTORY_KINDS.container.safeParse(c).success).toBe(true);
+    const full = { ...c, health: 'healthy', composeProject: 'facto', startedAt: '2026-11-27T10:00:00Z', ports: ['127.0.0.1:3000->3000/tcp'] };
+    expect(INVENTORY_KINDS.container.safeParse(full).success).toBe(true);
+  });
+  it('rejects a bad status and strips unknown fields such as env', () => {
+    expect(INVENTORY_KINDS.container.safeParse({ ...c, status: 'paused' }).success).toBe(false);
+    expect(INVENTORY_KINDS.container.parse({ ...c, env: ['A=1'] })).not.toHaveProperty('env');
   });
 });
