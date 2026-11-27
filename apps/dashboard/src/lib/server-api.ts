@@ -17,3 +17,5 @@ export const getContainers = () => li(config(), 'container');
 export const getApprovals = () => lap(config());
 export const getClaudeSessions = () => li(config(), 'claude-session');
 export const getClaudeUsage = () => li(config(), 'claude-usage');
+export const getBackups = () => li(config(), 'backup');
+export const getServices = () => li(config(), 'service');
