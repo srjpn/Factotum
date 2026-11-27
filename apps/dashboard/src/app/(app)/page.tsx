@@ -1,45 +1,59 @@
-import Link from 'next/link';
-import { ActivityTable } from '@/components/activity-table';
 import { AutoRefresh } from '@/components/auto-refresh';
-import { ApiError } from '@/components/badges';
-import { getActivity, getNodes } from '@/lib/server-api';
+import { Clock } from '@/components/clock';
+import { ActivityCard, AdaptersCard, MacbookCard, RunsCard, TaskBoardCard } from '@/components/overview-cards';
+import { Pill, Tile } from '@/components/ui';
+import { adaptersPill, nodeSummary, pendingApprovals, runsToday, toRunRows } from '@/lib/overview';
+import { getActivity, getAdapters, getApprovals, getContainers, getNodes, getRuns, getTasks } from '@/lib/server-api';
+import { parseSource, taskSources, toTaskRows } from '@/lib/tasks';
 
 export const dynamic = 'force-dynamic';
 
-export default async function Overview() {
-  const [nodes, activity] = await Promise.all([getNodes(), getActivity(5)]);
-  const count = (s: string) => (nodes.ok ? nodes.data.filter((n) => n.status === s).length : 0);
+export default async function Overview({ searchParams }: { searchParams: Promise<{ source?: string | string[] }> }) {
+  const raw = (await searchParams).source;
+  const [nodes, runsRaw, tasksRaw, adapters, containers, approvals, activity] = await Promise.all([
+    getNodes(), getRuns(), getTasks(), getAdapters(), getContainers(), getApprovals(), getActivity(6),
+  ]);
+  const now = Date.now();
+  const runs = runsRaw.ok ? { ok: true as const, data: toRunRows(runsRaw.data) } : runsRaw;
+  const tasks = tasksRaw.ok ? { ok: true as const, data: toTaskRows(tasksRaw.data) } : tasksRaw;
+  const sources = tasks.ok ? taskSources(tasks.data) : [];
+  const source = parseSource(raw, sources);
+  const pill = adapters.ok ? adaptersPill(adapters.data) : { tone: 'bad' as const, label: 'Adapter status unavailable' };
+  const node = nodes.ok ? nodeSummary(nodes.data) : undefined;
+  const inProgress = tasks.ok ? tasks.data.filter((t) => t.status === 'in-progress').length : undefined;
+  const pending = approvals.ok ? pendingApprovals(approvals.data, now).length : undefined;
+  const todayRuns = runs.ok ? runsToday(runs.data, now) : undefined;
+  const na = <span aria-label="unavailable">–</span>;
+
   return (
     <>
       <AutoRefresh />
-      <h1>Overview</h1>
-      <section aria-label="Node summary">
-        {nodes.ok ? (
-          <div className="stats">
-            <Stat label="Online" value={count('online')} tone="online" />
-            <Stat label="Offline" value={count('offline')} tone="offline" />
-            <Stat label="Pending" value={count('pending')} tone="pending" />
-          </div>
-        ) : (
-          <ApiError message={nodes.message} />
-        )}
-      </section>
-      <section aria-label="Recent activity">
-        <div className="section-head">
-          <h2>Recent activity</h2>
-          <Link href="/activity">View all</Link>
+      <div className="ov-head">
+        <h1>
+          Facto <span className="f">lite</span>
+        </h1>
+        <div className="right">
+          <Pill tone={pill.tone}>{pill.label}</Pill>
+          <Clock />
         </div>
-        {activity.ok ? <ActivityTable entries={activity.data} /> : <ApiError message={activity.message} />}
-      </section>
-    </>
-  );
-}
+      </div>
 
-function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
-  return (
-    <div className={`card stat tone-${tone}`}>
-      <div className="stat-value">{value}</div>
-      <div className="muted">{label}</div>
-    </div>
+      <div className="tiles">
+        <Tile label="Node status" value={node?.value ?? na} sub={node?.sub ?? 'unavailable'} href="/nodes" />
+        <Tile label="Pani runs today" value={todayRuns ?? na} sub={runs.ok ? undefined : 'unavailable'} />
+        <Tile label="Tasks in progress" value={inProgress ?? na} sub={tasks.ok ? undefined : 'unavailable'} href="/tasks" />
+        <Tile label="Awaiting approval" value={pending ?? na} sub={approvals.ok ? undefined : 'unavailable'} href="/approvals" />
+      </div>
+
+      <div className="grid2">
+        <MacbookCard nodes={nodes} now={now} />
+        <RunsCard runs={runs} />
+      </div>
+      <div className="grid2">
+        <TaskBoardCard tasks={tasks} sources={sources} source={source} />
+        <AdaptersCard adapters={adapters} containers={containers} />
+      </div>
+      <ActivityCard entries={activity} />
+    </>
   );
 }

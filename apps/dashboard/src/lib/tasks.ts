@@ -21,7 +21,7 @@ export function toTaskRows(items: InventoryItem[]): TaskRow[] {
   const rows: TaskRow[] = [];
   for (const item of items) {
     if (item.kind !== 'task') continue;
-    const data = TaskItemSchema.safeParse({ ...item.data, externalId: item.externalId, title: item.title });
+    const data = TaskItemSchema.safeParse({ status: item.status, ...item.data, externalId: item.externalId, title: item.title });
     if (!data.success) continue;
     const t = data.data;
     rows.push({

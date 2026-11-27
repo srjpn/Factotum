@@ -41,3 +41,15 @@ describe('api client', () => {
     expect(await listNodes(cfg((async () => new Response('<html>')) as typeof fetch))).toMatchObject({ kind: 'invalid' });
   });
 });
+
+describe('overview endpoints', () => {
+  it('requests inventory by kind and parses adapters', async () => {
+    const f = vi.fn(async () => json([]));
+    const { listAdapters, listInventory } = await import('./api');
+    await listInventory(cfg(f as unknown as typeof fetch), 'run');
+    expect(String((f.mock.calls[0] as unknown as [URL])[0])).toBe('http://api.test:3000/inventory?kind=run');
+    const a = { id: '1', name: 'jira', version: '1', domain: 'tasks', tier: 'observe', scopes: [], status: 'up', statusDetail: '395 issues from 1 project(s)', lastSeenAt: null, registeredAt: '2026-11-27T10:00:00.000Z' };
+    const r = await listAdapters(cfg((async () => json([a])) as unknown as typeof fetch));
+    expect(r.ok && r.data[0]?.statusDetail).toBe('395 issues from 1 project(s)');
+  });
+});

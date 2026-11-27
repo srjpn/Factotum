@@ -1,4 +1,4 @@
-import { ActivityEntrySchema, InventoryItemSchema, NodeSchema, type ActivityEntry, type InventoryItem, type Node } from '@facto/contracts';
+import { ActivityEntrySchema, AdapterSummarySchema, InventoryItemSchema, NodeSchema, type ActivityEntry, type AdapterSummary, type InventoryItem, type Node } from '@facto/contracts';
 import { z } from 'zod';
 
 export type ApiFailure = { ok: false; kind: 'unreachable' | 'unauthorized' | 'http' | 'invalid'; message: string };
@@ -46,3 +46,8 @@ export const listActivity = (c: ApiConfig, limit: number): Promise<ApiResult<Act
 
 export const listTasks = (c: ApiConfig): Promise<ApiResult<InventoryItem[]>> =>
   apiGet(c, '/inventory?kind=task', z.array(InventoryItemSchema));
+
+export const listInventory = (c: ApiConfig, kind: 'task' | 'run' | 'container'): Promise<ApiResult<InventoryItem[]>> =>
+  apiGet(c, `/inventory?kind=${kind}`, z.array(InventoryItemSchema));
+
+export const listAdapters = (c: ApiConfig): Promise<ApiResult<AdapterSummary[]>> => apiGet(c, '/adapters', z.array(AdapterSummarySchema));
