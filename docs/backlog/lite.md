@@ -104,6 +104,57 @@ Status: built on branch `lt-7-trello-adapter` (`adapters/trello`), read-only, te
 
 Status (2026-11-27): built. Migration `005_approvals.sql`, module `apps/api/src/approvals/`, tier table `apps/api/src/policy/policy.ts`, dashboard page `/approvals`. Request, approve, deny and expire are logged; unit and integration tests (`approvals.integration.test.ts`) pass against real Postgres. Design is in [ADR-010](../adr/010-approval-policy-lite.md) (Proposed, needs owner acceptance). Not done: no action consumes an approval yet (LT-13 does), and the caller's declared risk is trusted (ADR-010 item 5). Not checked by hand in a browser.
 
+## LT-18 gate result
+
+Script: [`scripts/lite-gate.sh`](../../scripts/lite-gate.sh); manual checklist: [lite-gate.md](../runbooks/lite-gate.md). Run on 2026-11-27 (about 18:40 UTC) against the live Compose stack (API 127.0.0.1:3000, dashboard 127.0.0.1:3001) with `GATE_WRITE=1`. Result: **PASS 40, FAIL 0, SKIP 2**, exit 0. The default run (no write section) gave PASS 34, FAIL 0, SKIP 3. The script was also run against a dead API URL and exited non-zero (16 FAIL), so a failure is detected. Counts only; no titles or client content were recorded.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| api-health | PASS | `GET /health` 200 |
+| auth (6 owner GET routes, enrolment-token POST, unknown node credential on heartbeat) | PASS x8 | 401 without token and with a wrong token |
+| node-online | PASS | 1 node online, cpu, memory and disk present, heartbeat 10 s old (limit 90 s) |
+| node-battery | PASS | battery metric present |
+| activity-risk | PASS | 55 entries, all with a valid risk level |
+| node-status-logged | PASS | 1 `node.online` from `node-status-monitor`, 0 `node.offline` |
+| activity-order | PASS | ids unique and ordered |
+| activity-append-only | PASS | DELETE, PATCH, PUT on `/activity` and `/activity/1` return 404 |
+| adapters-up | PASS | 6 of 6 up: claude, devservers, docker, jira, pani, timemachine |
+| adapters-declared | PASS | every adapter has a tier and scopes |
+| inventory task | PASS | 395 (Jira only), all client-data |
+| inventory run | PASS | 32 (Pani), all client-data |
+| inventory container | PASS | 8 (Docker), personal |
+| inventory backup | PASS | 1 (Time Machine), personal |
+| inventory service | PASS | 45 (dev servers), personal |
+| inventory claude-session / claude-usage | PASS | 100 / 24, client-data |
+| privacy-jira, privacy-pani-runs, privacy-all | PASS | Jira and Pani runs client-data; all 605 items have a class |
+| privacy-trello | SKIP | no Trello tasks (live check pending credentials) |
+| no-secrets-in-output | PASS | no `facto_node_`, `facto_adp_`, `facto_enrol_` or owner token in `/activity` (500) or `/inventory` |
+| approvals-reachable | PASS | 200 |
+| privacy-policy | PASS | client-data allowed targets empty (fail closed), personal `*` |
+| dashboard-login, dashboard-auth-redirect | PASS | `/login` 200; `/` redirects to login |
+| private-by-default, compose-default-bind | PASS | published ports on 127.0.0.1 only; compose defaults to 127.0.0.1 |
+| portability-runbook | SKIP | `move-control-plane.md` not on this branch |
+| privacy-deny, privacy-deny-logged (write section) | PASS | client-data to an unlisted target refused; `privacy.deny` logged with outcome `denied` |
+| privacy-personal-allow, policy-read-allowed, policy-destructive-pending, approval-deny-logged (write section) | PASS | read allowed; destructive pending, then denied by owner |
+
+The write section left 4 to 5 probe entries in the live activity log (`gate.check`, `gate.read-probe`, `gate.destructive-probe` and its denial). The log is append-only, so they stay.
+
+### Not verified
+
+- Trello live check (needs the owner's credentials); Trello task privacy is therefore SKIP.
+- Tailscale, and a real second machine: the Phase 0 roadmap gate is not passed by this.
+- Node offline detection was not exercised by this run (the agent was not stopped); the script only proves `node-status-monitor` logs. The stop and restart test is a manual item in the checklist.
+- Write actions (`pani.start-job`, `trello.move-card`, `jira.transition-issue`) against real services; the probes use only `gate.*` names and never run an adapter action.
+- LT-19 move runbook (not on this branch); LT-14 Pulse (dropped by the owner, not built).
+- ntfy delivery, dashboard pages by eye (approvals, tasks, activity), and the owner login with a wrong password.
+- Owner acceptance of ADR-009, ADR-010 and the other Proposed ADRs; the Pulse question.
+- The Docker adapter's `restart` action, battery-low and run-finished notifications (not built).
+- `POST /privacy/check` is not wired into `POST /actions/request` or `/actions/run` (LT-12 note), so no run is refused by privacy yet; only the decision call is proven.
+
+### Open issues
+
+None from the script (0 FAIL). Observations for the owner: the `client-data` allowed list is empty on this stack, so any client-data run would be refused until `FACTO_PRIVACY_CLIENT_DATA_TARGETS` is set; and the activity log holds only 55 entries because the stack was recreated (older entries are in the previous database state, not checked).
+
 ## Suggested order
 
 1. LT-1, LT-2, LT-3.
