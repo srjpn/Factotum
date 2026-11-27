@@ -198,4 +198,31 @@ describe.skipIf(!url)('inventory ingest', () => {
     expect((await call('GET', '/inventory?kind=bogus', { token: ADMIN })).status).toBe(400);
     await put(pani, [], 'client-data', 'run');
   });
+
+  it('stores containers (name becomes the title) and filters by kind=container', async () => {
+    const docker = await register('docker', ['container']);
+    const container = (id: string, extra: Record<string, unknown> = {}) => ({
+      externalId: id,
+      name: `web-${id}`,
+      image: 'nginx:1',
+      status: 'running',
+      statusLabel: 'running',
+      source: 'docker',
+      ports: ['127.0.0.1:3000->3000/tcp'],
+      ...extra,
+    });
+    const r = await put(docker, [container('abc'), container('def', { status: 'stopped', statusLabel: 'exited' })], 'personal', 'container');
+    expect(r.json).toEqual({ added: 2, updated: 0, removed: 0, unchanged: 0 });
+    const items = (await list('?kind=container')) as Array<{ title: string; status: string; kind: string; data: Record<string, unknown> }>;
+    expect(items.map((i) => i.title)).toEqual(['web-abc', 'web-def']);
+    expect(items[0]!.data).toMatchObject({ image: 'nginx:1', source: 'docker' });
+    expect(items[0]!.data).not.toHaveProperty('name');
+    expect((await list('?source=docker')).length).toBe(2);
+    expect((await put(docker, [container('x', { status: 'paused' })], 'personal', 'container')).status).toBe(400);
+    // Unknown fields (env, labels, mounts) are dropped by validation, never stored.
+    expect((await put(docker, [{ ...container('y'), env: ['SECRET=1'], labels: { a: 'b' } }], 'personal', 'container')).status).toBe(200);
+    const stored = JSON.stringify(await list('?kind=container'));
+    expect(stored).not.toContain('SECRET');
+    expect(stored).not.toContain('labels');
+  });
 });

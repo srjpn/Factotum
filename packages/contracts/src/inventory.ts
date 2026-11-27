@@ -44,8 +44,23 @@ export const RunItemSchema = z.object({
 });
 export type RunItem = z.infer<typeof RunItemSchema>;
 
+/** A container on a Docker host. Never carries environment variables, labels (except the compose project), mounts, commands or logs. */
+export const ContainerItemSchema = z.object({
+  externalId: z.string().min(1).max(200), // short container id
+  name: z.string().min(1).max(500),
+  image: z.string().min(1).max(500),
+  status: z.enum(['running', 'stopped', 'restarting', 'unhealthy', 'other']),
+  statusLabel: z.string().max(200), // Docker's state string, for example "running" or "exited"
+  health: z.enum(['healthy', 'unhealthy', 'starting', 'none']).optional(),
+  composeProject: slug.optional(),
+  startedAt: z.string().datetime({ offset: true }).optional(),
+  source: slug,
+  ports: z.array(z.string().max(200)).max(100).optional(), // published ports only, e.g. "127.0.0.1:3000->3000/tcp"
+});
+export type ContainerItem = z.infer<typeof ContainerItemSchema>;
+
 /** Kinds the core understands. An adapter may only push a kind listed in its manifest `reports`. */
-export const INVENTORY_KINDS = { task: TaskItemSchema, run: RunItemSchema } as const;
+export const INVENTORY_KINDS = { task: TaskItemSchema, run: RunItemSchema, container: ContainerItemSchema } as const;
 export type InventoryKind = keyof typeof INVENTORY_KINDS;
 export const isInventoryKind = (kind: string): kind is InventoryKind => Object.hasOwn(INVENTORY_KINDS, kind);
 

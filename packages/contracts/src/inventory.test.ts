@@ -48,3 +48,17 @@ describe('run item', () => {
     expect('diff' in parsed).toBe(false);
   });
 });
+
+describe('container item', () => {
+  const c = { externalId: 'abc123', name: 'web', image: 'nginx:1', status: 'running', statusLabel: 'running', source: 'docker' };
+  it('is a known kind and accepts minimal and full items', () => {
+    expect(isInventoryKind('container')).toBe(true);
+    expect(INVENTORY_KINDS.container.safeParse(c).success).toBe(true);
+    const full = { ...c, health: 'healthy', composeProject: 'facto', startedAt: '2026-11-27T10:00:00Z', ports: ['127.0.0.1:3000->3000/tcp'] };
+    expect(INVENTORY_KINDS.container.safeParse(full).success).toBe(true);
+  });
+  it('rejects a bad status and strips unknown fields such as env', () => {
+    expect(INVENTORY_KINDS.container.safeParse({ ...c, status: 'paused' }).success).toBe(false);
+    expect(INVENTORY_KINDS.container.parse({ ...c, env: ['A=1'] })).not.toHaveProperty('env');
+  });
+});
