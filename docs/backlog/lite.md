@@ -41,6 +41,8 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
 
+> LT-9 status (2026-11-27): done on branch `claude/lt-9-tasks-panel-373b41`. Dashboard page `/tasks` lists tasks from every task adapter via `GET /inventory?kind=task`, with a source filter and a privacy tag per row (see the dashboard runbook). No API change was needed. Not done: joining Pani runs to tasks by `ticketKey` (the data is there; left for when runs are shown) and a live check with real Jira/Trello data.
+
 ## LT-5 notes
 
 Status: done, built on LT-3. API shape is in [adapter-contract.md](../architecture/adapter-contract.md). Registration and health are covered by unit tests and by `adapters.integration.test.ts` against real Postgres (`FACTO_TEST_DATABASE_URL`).

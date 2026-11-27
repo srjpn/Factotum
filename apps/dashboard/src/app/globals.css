@@ -71,7 +71,8 @@ input { font: inherit; padding: 0.55rem 0.7rem; border-radius: 6px; border: 1px 
 .status-online, .outcome-success, .risk-read { background: var(--ok-bg); color: var(--ok-fg); }
 .status-offline, .outcome-failure, .risk-destructive { background: var(--bad-bg); color: var(--bad-fg); }
 .status-pending, .outcome-denied, .risk-privileged { background: var(--warn-bg); color: var(--warn-fg); }
-.risk-reversible { background: var(--info-bg); color: var(--info-fg); }
+.risk-reversible, .privacy-personal { background: var(--info-bg); color: var(--info-fg); }
+.privacy-client-data { background: var(--warn-bg); color: var(--warn-fg); }
 .status-revoked { background: var(--neutral-bg); color: var(--neutral-fg); }
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
