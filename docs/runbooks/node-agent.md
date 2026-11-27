@@ -37,3 +37,18 @@ FACTO_API_URL=http://<control-plane-host>:3000 FACTO_ENROLMENT_TOKEN=<token> nod
 ## Moving the control plane
 
 Change `FACTO_API_URL` and restart. If the new control plane has a fresh database, delete the state file and enrol again.
+
+## Verification against the real API (2026-11-27)
+
+Run against the LT-3 API (`9d1ee38`) with a throwaway Postgres. Result: pass.
+
+1. `docker run --rm -d --name facto-lt4-e2e -p 55435:5432 -e POSTGRES_PASSWORD=test postgres:17-alpine`
+2. Build, then in `apps/api` start the API: `FACTO_DATABASE_URL=postgres://postgres:test@localhost:55435/postgres FACTO_ADMIN_TOKEN=<24+ chars> FACTO_PORT=3788 node dist/main.js`
+3. `POST /nodes/enrolment-tokens` with the owner bearer token and `{"nodeName":"mac-test"}` returns the token.
+4. Run the agent with `FACTO_API_URL=http://localhost:3788`, `FACTO_ENROLMENT_TOKEN=<token>`, a temporary `FACTO_AGENT_STATE_FILE` and a 2 second interval. It enrolled, wrote the state file with mode 0600 and sent heartbeats. `GET /nodes` showed `lastHeartbeatAt` and `lastMetrics` (cpu, memory, disk, battery).
+5. A second run without a token reused the stored credential and kept sending heartbeats; no second enrolment.
+6. `POST /nodes/:id/revoke` returned 204. The next agent run got 401, logged that the credential was rejected and exited with code 1.
+7. `GET /activity` showed the token creation, `node.enrol` and `node.revoke` entries; heartbeats are not logged individually.
+8. Stopped the API and the container.
+
+The real API agrees with the contract. Tailscale was not running on the test machine, so that path is unverified end to end.
