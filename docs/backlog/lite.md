@@ -49,6 +49,10 @@ Status: done, built on LT-3. API shape is in [adapter-contract.md](../architectu
 Status: done on branch `lt-5b-inventory-sdk`. Migration is `004_inventory.sql`; it depends only on `002_adapters.sql`. Not done: other inventory kinds (`run`, `container`, ...) are added to `packages/contracts/src/inventory.ts` by the adapter chunk that needs them, and the SDK has no token rotation.
 > LT-16 status (2026-11-27): done for node offline, node online and denied enrolment (see `docs/runbooks/notifications.md`). Run finished, run failed and battery low are added as rules in `apps/api/src/notifications/rules.ts` when LT-9 and the battery metric exist. Needs an owner-run ntfy server and topic.
 
+## LT-7 notes
+
+Status: built on branch `lt-7-trello-adapter` (`adapters/trello`), read-only, tested against a mock Trello server and the real API. **Live check against trello.com is pending the owner**: follow [the runbook](../runbooks/trello-adapter.md) and record the result here.
+
 ## Suggested order
 
 1. LT-1, LT-2, LT-3.
