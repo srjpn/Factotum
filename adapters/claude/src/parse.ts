@@ -28,7 +28,17 @@ export const OWNER_TOOLS: ReadonlySet<string> = new Set(['AskUserQuestion', 'Exi
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
 
-export function parseLine(line: string): ParsedLine | null {
+/**
+ * A session title record. Claude Code writes `custom-title` (`customTitle`, set by the owner) and
+ * `agent-name` (`agentName`, a fallback); neither has a timestamp. Titles are user-written and
+ * may mention clients: they are client-data and are never logged.
+ */
+export interface ParsedTitle {
+  type: 'custom-title' | 'agent-name';
+  title: string;
+}
+
+export function parseLine(line: string): ParsedLine | ParsedTitle | null {
   if (line.length < 2 || line.length > 20_000_000) return null;
   let o: unknown;
   try {
@@ -39,6 +49,11 @@ export function parseLine(line: string): ParsedLine | null {
   if (!o || typeof o !== 'object') return null;
   const r = o as Record<string, unknown>;
   const type = r.type;
+  if (type === 'custom-title' || type === 'agent-name') {
+    const t = type === 'custom-title' ? r.customTitle : r.agentName;
+    const title = typeof t === 'string' ? t.trim().slice(0, 200) : '';
+    return title ? { type, title } : null;
+  }
   if (type !== 'user' && type !== 'assistant') return null;
   const ts = typeof r.timestamp === 'string' ? Date.parse(r.timestamp) : NaN;
   if (!Number.isFinite(ts)) return null;

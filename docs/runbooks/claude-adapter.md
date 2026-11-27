@@ -10,7 +10,7 @@ Transcripts can be many megabytes. The adapter keeps per-file totals in memory a
 
 ## What it reports
 
-**Sessions** (`claude-session`, newest 100): short id (first 8 characters of the session id), project label, models used, started and last activity, state `active` (transcript modified in the last N minutes, default 10), `idle` or `waiting` (see below), message count, sidechain (sub-agent) messages, tokens in, out, cache write and cache read, wall-clock duration (first to last message), active time (sum of gaps under 5 minutes), estimated cost, and, for active sessions, the context size of the latest message (input plus cache tokens) as a context-pressure hint.
+**Sessions** (`claude-session`, newest 100): title, short id (first 8 characters of the session id), project label, models used, started and last activity, state `active` (transcript modified in the last N minutes, default 10), `idle` or `waiting` (see below), message count, sidechain (sub-agent) messages, tokens in, out, cache write and cache read, wall-clock duration (first to last message), active time (sum of gaps under 5 minutes), estimated cost, and, for active sessions, the context size of the latest message (input plus cache tokens) as a context-pressure hint.
 
 **Waiting on you.** A session is `waiting` (shown first, with a "needs you" pill and the wait time) when its last assistant line has a `tool_use` named `AskUserQuestion` or `ExitPlanMode` (plan approval) and no later user line (a `tool_result` for that id, or typed text) or assistant line follows. Only the boolean, the tool name and the wait time are kept: the question and options are never read into any structure. Questions older than 24 hours count as abandoned, not waiting.
 
@@ -34,6 +34,10 @@ Override without rebuilding: set `CLAUDE_PRICING_FILE` to a JSON file:
 ```
 
 Listed models replace the built-ins; others keep them. A dated id such as `claude-opus-5-5-20261001` matches the longest known prefix.
+
+## Session titles
+
+`title` is the session title: the latest `custom-title` record in the transcript (`customTitle`), else the latest `agent-name` record (`agentName`), else the short session id; capped at 200 characters. The project label is the separate `project` field, shown as a small tag. These are the only title record types seen in real transcripts (checked by record type and key names only; no `ai-title` exists). **Titles are written by you and may mention clients.** They stay `client-data`, are sent only in the pushed snapshot, and are never logged by the adapter (a test checks this).
 
 ## Privacy of project names
 

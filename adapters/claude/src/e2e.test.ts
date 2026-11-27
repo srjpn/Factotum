@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadConfig } from './config.js';
-import { assistant, SECRET, SECRET_PATH, user } from './fixtures.js';
+import { assistant, customTitle, SECRET, SECRET_PATH, TITLE, user } from './fixtures.js';
 import { createClaudeAdapter } from './run.js';
 
 const SERVICE = 'facto_adp_e2e-service-token';
@@ -22,7 +22,7 @@ describe('claude adapter end to end (fixture transcripts, mock Facto API)', () =
     mkdirSync(join(projects, '-Users-me-work-acme'), { recursive: true });
     const now = Date.now();
     const t = (min: number) => new Date(now - min * 60_000).toISOString();
-    writeFileSync(join(projects, '-Users-me-work-acme', 'cafebabe-0000-0000-0000-000000000000.jsonl'), [user(t(5)), assistant(t(4), 'claude-sonnet-5-5', [10, 20, 30, 40])].join('\n') + '\n');
+    writeFileSync(join(projects, '-Users-me-work-acme', 'cafebabe-0000-0000-0000-000000000000.jsonl'), [user(t(5)), assistant(t(4), 'claude-sonnet-5-5', [10, 20, 30, 40]), customTitle(TITLE)].join('\n') + '\n');
 
     const seen: { path: string; auth?: string; body: any }[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
     const facto = createServer(async (req, res) => {
@@ -50,10 +50,11 @@ describe('claude adapter end to end (fixture transcripts, mock Facto API)', () =
     expect(usage!.path).toBe('PUT /adapters/inventory/claude-usage');
     expect(sessions!.auth).toBe(`Bearer ${SERVICE}`);
     expect(sessions!.body.privacyClass).toBe('client-data');
-    expect(sessions!.body.items[0]).toMatchObject({ externalId: 'cafebabe', title: 'acme', status: 'active', tokens: { input: 10, output: 20, cacheWrite: 30, cacheRead: 40 } });
+    expect(sessions!.body.items[0]).toMatchObject({ externalId: 'cafebabe', title: TITLE, project: 'acme', status: 'active', tokens: { input: 10, output: 20, cacheWrite: 30, cacheRead: 40 } });
     expect(usage!.body.items.map((i: { externalId: string }) => i.externalId)).toContain('window:5h');
     const pushed = JSON.stringify(puts());
     for (const s of [SECRET, SECRET_PATH]) expect(pushed).not.toContain(s);
+    expect(logs.join('\n')).not.toContain(TITLE);
     expect(logs.join('\n')).not.toMatch(/owner-e2e-secret|facto_adp_e2e/);
 
     // Missing folder is an empty snapshot, not a crash.

@@ -10,7 +10,7 @@ const NOW = new Date(2026, 10, 27, 12).getTime();
 
 describe('claude card helpers', () => {
   const sessions = toClaudeSessions([
-    item('claude-session', 'aaaa', 'acme', 'active', { statusLabel: 'active', models: ['m'], startedAt: '2026-11-27T10:00:00Z', lastActivityAt: '2026-11-27T11:00:00Z', messageCount: 3, sidechainMessages: 0, tokens, durationSeconds: 60, activeSeconds: 60, estimatedCostUsd: 1, source: 'claude' }),
+    item('claude-session', 'aaaa', 'Fix the invoice bug', 'active', { project: 'acme', statusLabel: 'active', models: ['m'], startedAt: '2026-11-27T10:00:00Z', lastActivityAt: '2026-11-27T11:00:00Z', messageCount: 3, sidechainMessages: 0, tokens, durationSeconds: 60, activeSeconds: 60, estimatedCostUsd: 1, source: 'claude' }),
     item('claude-session', 'bad', 'x', 'idle', { nonsense: true }),
   ]);
   const usage = toClaudeUsage([

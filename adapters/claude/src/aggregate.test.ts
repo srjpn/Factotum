@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ClaudeSessionItemSchema, ClaudeUsageItemSchema } from '@facto/contracts';
 import { aggregate, MAX_SESSIONS, projectLabel } from './aggregate.js';
-import { assistant, QUESTION, SECRET, SECRET_PATH, toolResult, toolUse, user } from './fixtures.js';
+import { agentName, assistant, customTitle, TITLE, QUESTION, SECRET, SECRET_PATH, toolResult, toolUse, user } from './fixtures.js';
 import { createPricing } from './pricing.js';
 import { applyLine, newState, type FileState } from './scan.js';
 
@@ -42,7 +42,7 @@ describe('aggregate', () => {
 
   it('classifies sessions active or idle by the window, newest first, with context size only when active', () => {
     expect(out.sessions.map((s) => [s.externalId, s.status])).toEqual([['aaaaaaaa', 'active'], ['bbbbbbbb', 'idle']]);
-    expect(out.sessions[0]).toMatchObject({ title: 'acme', messageCount: 4, sidechainMessages: 1, contextTokens: 2_000_000, durationSeconds: 28 * 60, activeSeconds: 120 });
+    expect(out.sessions[0]).toMatchObject({ title: 'aaaaaaaa', project: 'acme', messageCount: 4, sidechainMessages: 1, contextTokens: 2_000_000, durationSeconds: 28 * 60, activeSeconds: 120 });
     expect(out.sessions[1]!.contextTokens).toBeUndefined();
     // 1M input @1 + 1M output @2 + 1M cache write @3 + 1M cache read @4
     expect(out.sessions[0]!.estimatedCostUsd).toBe(10);
@@ -87,5 +87,30 @@ describe('waiting on the owner (best-effort heuristic)', () => {
   it('ignores ordinary tool uses and abandoned questions', () => {
     expect(run([toolUse(at(2), 'Bash', 'tu_2')]).status).toBe('active');
     expect(run([toolUse(at(60 * 30), 'AskUserQuestion', 'tu_3')]).status).toBe('idle');
+  });
+});
+
+describe('session titles', () => {
+  const run = (lines: string[], o = opts) => aggregate([file('dddddddd-4', '-Users-me-work-acme', [assistant(at(2), 'm', [1, 1, 0, 0]), ...lines])], o).sessions[0]!;
+  it('uses the latest custom title, with the project as a separate field', () => {
+    const s = run([customTitle('Old title'), customTitle(TITLE)]);
+    expect(s).toMatchObject({ title: TITLE, project: 'acme' });
+    expect(ClaudeSessionItemSchema.safeParse(s).success).toBe(true);
+  });
+  it('falls back to the agent name, then the short id, and caps the length', () => {
+    expect(run([agentName('agent-x')]).title).toBe('agent-x');
+    expect(run([agentName('agent-x'), customTitle('Real')]).title).toBe('Real');
+    expect(run([]).title).toBe('dddddddd');
+    expect(run([customTitle('y'.repeat(300))]).title).toHaveLength(200);
+  });
+  it('hashes the project but keeps the title when names are hidden', () => {
+    const s = run([customTitle(TITLE)], { ...opts, hideProjectNames: true });
+    expect(s.title).toBe(TITLE);
+    expect(s.project).toMatch(/^project-[0-9a-f]{8}$/);
+  });
+  it('does not count title lines as messages or move the clock', () => {
+    const s = run([customTitle(TITLE)]);
+    expect(s.messageCount).toBe(1);
+    expect(s.durationSeconds).toBe(0);
   });
 });

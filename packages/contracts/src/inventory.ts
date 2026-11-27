@@ -72,12 +72,14 @@ export const ClaudeTokensSchema = z.object({
 });
 export type ClaudeTokens = z.infer<typeof ClaudeTokensSchema>;
 
-/** One Claude Code session (one transcript). `title` is the project label (last path segment, or a hash). */
+/** One Claude Code session (one transcript). `title` is the session title (custom title, else agent name, else short id); user-written, so client-data. */
 export const ClaudeSessionItemSchema = z.object({
   externalId: z.string().min(1).max(200), // short session id
   title: z.string().min(1).max(200),
   status: z.enum(['active', 'idle', 'waiting']),
   statusLabel: z.string().max(200),
+  /** Project label (last path segment, or a hash): a small secondary tag. */
+  project: slug.optional(),
   models: z.array(z.string().max(100)).max(10),
   startedAt: isoDateTime,
   lastActivityAt: isoDateTime,

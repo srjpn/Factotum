@@ -27,3 +27,7 @@ export const toolUse = (ts: string, name: string, id: string): string =>
 /** A user line carrying the answer to a tool_use. */
 export const toolResult = (ts: string, id: string): string =>
   JSON.stringify({ type: 'user', timestamp: ts, message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: id, content: SECRET }] } });
+
+export const TITLE = 'Client Acme invoice fix';
+export const customTitle = (title: string): string => JSON.stringify({ type: 'custom-title', customTitle: title, sessionId: 'sess' });
+export const agentName = (name: string): string => JSON.stringify({ type: 'agent-name', agentName: name, sessionId: 'sess' });
