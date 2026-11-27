@@ -33,7 +33,9 @@ Static files need `.next/static` copied next to the standalone server, as the Do
 - **Nodes:** name, live status from the API, last heartbeat, CPU, memory, disk, battery when reported. Revoked nodes are dimmed.
 - **Activity:** newest first, with a selector for 25, 50, 100 or 200 entries.
 
-Nodes and activity refresh every 10 seconds while the tab is visible. If the API is down or rejects the token, each page shows an error card instead of data.
+- **Tasks:** every `task` item from the adapters (Jira, Trello), read server-side from `GET /inventory?kind=task`. Each row shows title (linked when the adapter gave a URL), source, status, a privacy tag (`client-data` or `personal`), project and assignee when present. The Source selector (`/tasks?source=jira`) filters by the item's `source`; the choices come from the data. The page is empty until a task adapter has synced.
+
+Nodes, tasks and activity refresh every 10 seconds while the tab is visible. If the API is down or rejects the token, each page shows an error card instead of data.
 
 ## Login behaviour
 

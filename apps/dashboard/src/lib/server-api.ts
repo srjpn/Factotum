@@ -1,6 +1,6 @@
 import 'server-only';
 import { getEnv } from './env';
-import { listActivity as la, listNodes as ln } from './api';
+import { listActivity as la, listNodes as ln, listTasks as lt } from './api';
 
 const config = () => {
   const env = getEnv();
@@ -9,3 +9,4 @@ const config = () => {
 
 export const getNodes = () => ln(config());
 export const getActivity = (limit: number) => la(config(), limit);
+export const getTasks = () => lt(config());
