@@ -23,8 +23,29 @@ export const TaskItemSchema = z.object({
 });
 export type TaskItem = z.infer<typeof TaskItemSchema>;
 
+/**
+ * A Pani run (job). Never carries diffs, logs, commit messages, file paths or chunk titles.
+ * Privacy class is `client-data` because Pani works on client repositories.
+ */
+export const RunItemSchema = z.object({
+  externalId: z.string().min(1).max(200),
+  title: z.string().min(1).max(500),
+  status: z.enum(['queued', 'running', 'done', 'partial', 'failed', 'other']),
+  statusLabel: z.string().max(200),
+  ticketKey: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).max(100).optional(),
+  repo: z.string().max(200).optional(),
+  chunksDone: z.number().int().nonnegative().optional(),
+  chunksTotal: z.number().int().nonnegative().optional(),
+  startedAt: z.string().datetime({ offset: true }).optional(),
+  finishedAt: z.string().datetime({ offset: true }).optional(),
+  durationSeconds: z.number().nonnegative().optional(),
+  source: slug,
+  error: z.string().max(200).optional(),
+});
+export type RunItem = z.infer<typeof RunItemSchema>;
+
 /** Kinds the core understands. An adapter may only push a kind listed in its manifest `reports`. */
-export const INVENTORY_KINDS = { task: TaskItemSchema } as const;
+export const INVENTORY_KINDS = { task: TaskItemSchema, run: RunItemSchema } as const;
 export type InventoryKind = keyof typeof INVENTORY_KINDS;
 export const isInventoryKind = (kind: string): kind is InventoryKind => Object.hasOwn(INVENTORY_KINDS, kind);
 

@@ -172,4 +172,30 @@ describe.skipIf(!url)('inventory ingest', () => {
     const raw = JSON.stringify((await call('GET', '/activity?limit=500', { token: ADMIN })).json);
     expect(raw).not.toContain('Confidential');
   });
+
+  it('accepts run items from an adapter that reports "run", and filters by kind', async () => {
+    const pani = await register('pani', ['run']);
+    const run = (id: string, extra: Record<string, unknown> = {}) => ({
+      externalId: id,
+      title: `Run ${id}`,
+      status: 'partial',
+      statusLabel: 'partial',
+      source: 'pani',
+      ticketKey: 'ABC-12',
+      chunksDone: 1,
+      chunksTotal: 2,
+      ...extra,
+    });
+    expect((await put(pani, [run('j-1'), run('j-2', { status: 'running' })], 'client-data', 'run')).status).toBe(200);
+    expect((await list('?kind=run')).map((i) => `${i.adapter}:${i.externalId}`)).toEqual(['pani:j-1', 'pani:j-2']);
+    expect((await list('?kind=run&privacy=client-data')).length).toBe(2);
+    expect((await list('?kind=task')).some((i) => i.adapter === 'pani')).toBe(false);
+    const bad = await put(pani, [run('j-3', { status: 'cancelled' }), run('j-4', { ticketKey: 'nope' })], 'client-data', 'run');
+    expect(bad.status).toBe(400);
+    expect(JSON.stringify(bad.json)).toContain('items.0.status');
+    expect(JSON.stringify(bad.json)).toContain('items.1.ticketKey');
+    expect((await put(trello, [task('1')], 'personal', 'run')).status).toBe(403); // trello does not report runs
+    expect((await call('GET', '/inventory?kind=bogus', { token: ADMIN })).status).toBe(400);
+    await put(pani, [], 'client-data', 'run');
+  });
 });
