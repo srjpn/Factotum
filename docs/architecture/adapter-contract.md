@@ -40,6 +40,20 @@ ui:
 - **State flows one way.** Adapters report observed state; the core stores intent and cached snapshots.
 - **UI is declarative first.** Adapters supply tiles, cards and links. A full custom page is allowed only by embedding the tool's own UI.
 
+## Registration API (lite track, LT-5)
+
+| Endpoint | Caller | Auth | Risk |
+| --- | --- | --- | --- |
+| `POST /adapters/register` | Owner or installer | Owner token (`FACTO_ADMIN_TOKEN`, `AdminGuard`) as `Authorization: Bearer` | privileged (issues a credential) |
+| `POST /adapters/health` | The adapter | Its own service token | read |
+| `GET /adapters` | Owner or dashboard | Owner token | read |
+
+- The request body of `register` is the manifest. The API validates it against `schemas/adapter-manifest.schema.json`; an undeclared risk level, a missing risk level or a missing required field returns 400 with the list of errors. A duplicate name returns 409.
+- The response carries a service token (`facto_adp_...`) **once**. Only its SHA-256 hash is stored, and it is never logged. The token is scoped to the adapter: one scope per declared action permission, plus `adapter.health.report`. It authenticates only that adapter's own calls.
+- `POST /adapters/health` takes `{ "status": "up" | "degraded" | "down", "detail"?: string }`. Heartbeats are not written to the activity log (high frequency, no state change in intent); registration, token issue and rejected registrations are, with a declared risk level.
+- Registration writes the adapter row and both activity entries in one transaction.
+- Not yet built: token rotation, re-registration of an existing name, marking an adapter unavailable after missed heartbeats, and per-action scope enforcement (arrives with the action path in LT-11).
+
 ## Versioning
 
 Manifests carry a version, and the core declares the contract versions it supports. An adapter built for an older contract keeps working until that version is retired.

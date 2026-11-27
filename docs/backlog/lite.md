@@ -38,7 +38,16 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 | LT-19 | Move to a smaller machine | LT-3, LT-6 | `docs/runbooks/move-control-plane.md` exists; following it moves the control plane, Postgres and dashboard to a second machine and the MacBook agent reports to the new URL with no code change | P1-10 |
 | LT-18 | Gate test and notes | the chunks above that were built | A checklist or script proves the gate; the result is recorded in this file | P0-8 |
 
-## Suggested order
+## LT-5 notes
+
+Status: built on `claude/lt-5-adapter-registration-d6e52a`; waiting on LT-3 for the wiring below. API shape is in [adapter-contract.md](../architecture/adapter-contract.md).
+
+To wire when LT-3 lands:
+
+- Bind `ACTIVITY_RECORDER` in `apps/api/src/adapters/adapters.module.ts` to an adapter over LT-3's `ActivityService.record()` (the in-memory recorder is not durable).
+- Bind `ADAPTER_REPOSITORY` to `PgAdapterRepository` with LT-3's pool, and make sure `002_adapters.sql` runs after `001`.
+- Move `FACTO_ADAPTER_ADMIN_TOKEN` into `config.ts`, `.env.example` and `docker-compose.yml`. Replace it with LT-3's owner auth if that exists.
+
 
 1. LT-1, LT-2, LT-3.
 2. LT-4 and LT-5 in either order. After them LT-6 can start in parallel.
