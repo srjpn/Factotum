@@ -1,6 +1,6 @@
 # ADR-001: Node agent
 
-- Status: Proposed
+- Status: Accepted
 - Needed by: Phase 0
 
 ## Context
@@ -27,8 +27,18 @@ Node registration, remote execution, health and workload placement all depend on
 
 ## Decision
 
-To be made at the start of Phase 0.
+Accepted by the owner on 2026-11-27, as leaned.
+
+1. **Transport:** pull-based and outbound-only over Tailscale. The agent opens every connection; the control plane never connects to a node.
+2. **Enrolment:** a one-time token generated in the dashboard is exchanged for a per-node credential.
+3. **Token model:** the per-node credential is scoped to that node, rotated, and revocable by the owner.
+4. **Allowed actions:** an allowlist of named actions. Arbitrary shell is off by default and, if ever enabled, is a Privileged action.
+5. **Language:** TypeScript on Node. Revisit Go if footprint or distribution becomes a problem.
 
 ## Consequences
 
-To be filled in when accepted.
+- Nodes need no inbound ports, and sleeping or NAT'd nodes work, but commands reach a node only on its next poll, so action latency is bounded by the poll interval.
+- A stolen node credential exposes only that node's scope, and the owner can revoke it from the dashboard.
+- Every new node action is added to the allowlist with a risk level, which keeps the agent small but means new capabilities need a code change.
+- The agent shares types with the control plane through `packages/contracts`.
+- A Node runtime is required on each node until a single-binary build exists.

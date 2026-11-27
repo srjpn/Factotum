@@ -1,6 +1,6 @@
 # ADR-002: Adapter contract
 
-- Status: Proposed
+- Status: Accepted
 - Needed by: Phase 0
 
 ## Context
@@ -18,7 +18,7 @@ Option 2. The manifest declares name, version, domain, tier, reported inventory 
 
 ## Decision
 
-To be made at the start of Phase 0.
+Accepted by the owner on 2026-11-27, as leaned. Adapters are out-of-process (option 2), registered by the manifest in `schemas/adapter-manifest.schema.json`, and speak HTTP and typed events to the core through its API with a scoped service token.
 
 ## Consequences
 

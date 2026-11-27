@@ -17,7 +17,7 @@ Pick any chunk whose dependencies are done. Each chunk is small enough for one b
 
 | ID | Chunk | Depends on | Acceptance criteria | Maps to |
 | --- | --- | --- | --- | --- |
-| LT-1 | Decisions | none | ADR-001 and ADR-002 Accepted. A lite-track ADR records the datastore (SQLite or Postgres in Docker), where the control plane runs (the MacBook for now) and that this is single-owner. Open questions on the Pani interface and Pulse state are answered in `docs/open-questions.md` | P0-1 |
+| LT-1 | Decisions | none | ADR-001 and ADR-002 Accepted. A lite-track ADR ([ADR-009](../adr/009-lite-track.md)) records the datastore (Postgres in Docker), where the control plane runs (the MacBook for now) and that this is single-owner. Open questions on the Pani interface and Pulse state are answered in `docs/open-questions.md`. **Status: done except for the owner's confirmation of ADR-009 and the Pulse question** | P0-1 |
 | LT-2 | Repository skeleton | LT-1 | pnpm workspace with `apps/api`, `apps/node-agent`, `packages/contracts`; lint, typecheck and test commands listed in CLAUDE.md | P0-2 |
 | LT-3 | Core: nodes and activity log | LT-2 | Node model; one-time enrolment token exchanged for a per-node credential; heartbeat endpoint rejects unknown credentials; append-only activity log written by every mutation | P0-4, P1-4 |
 | LT-4 | MacBook node agent | LT-3 | Agent enrols, then sends CPU, memory, disk, battery and Tailscale status on an interval; retries with backoff; a node with no heartbeat is shown offline within 2 minutes and online again when they resume | P0-5, P0-6, P1-6 |
@@ -51,5 +51,5 @@ The smallest useful slice is LT-1 to LT-4 and LT-6: a dashboard that shows your 
 
 - Which source does Pani pull tickets from: Jira only, or Trello too?
 - Does Jira need one filter per client project?
-- How does Pani expose its state (API, files, database or logs)?
+- Pani exposes its state through an HTTP API (answered 2026-11-27). The endpoints still need to be written down in LT-10.
 - Is Pulse's state readable yet, or is it a stub only?
