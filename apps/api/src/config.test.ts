@@ -34,3 +34,17 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...base, FACTO_ADMIN_TOKEN: 'short' })).toThrow();
   });
 });
+
+describe('loadConfig ntfy', () => {
+  it('is off unless both URL and topic are set, and treats empty values as unset', () => {
+    expect(loadConfig(base).ntfy).toBeUndefined();
+    expect(loadConfig({ ...base, FACTO_NTFY_URL: 'http://ntfy:80', FACTO_NTFY_TOPIC: '' }).ntfy).toBeUndefined();
+    expect(loadConfig({ ...base, FACTO_NTFY_URL: '', FACTO_NTFY_TOPIC: '', FACTO_NTFY_TOKEN: '' }).ntfy).toBeUndefined();
+  });
+
+  it('reads url, topic and token', () => {
+    expect(
+      loadConfig({ ...base, FACTO_NTFY_URL: 'http://ntfy:80', FACTO_NTFY_TOPIC: 't', FACTO_NTFY_TOKEN: 'tk' }).ntfy,
+    ).toEqual({ url: 'http://ntfy:80', topic: 't', token: 'tk' });
+  });
+});

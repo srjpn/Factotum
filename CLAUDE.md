@@ -73,6 +73,8 @@ API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (used b
 
 Heartbeats are telemetry and are not logged one by one; state changes are logged where they are detected. A monitor checks every `FACTO_STATUS_CHECK_SECONDS` (default 15) and logs `node.online` and `node.offline` once per change. A node is offline after `FACTO_OFFLINE_AFTER_SECONDS` (default 90, maximum 110) without a heartbeat. `GET /nodes` returns a live `status` of `pending`, `online`, `offline` or `revoked`.
 
+Notifications (LT-16). Optional: set `FACTO_NTFY_URL` and `FACTO_NTFY_TOPIC` (and `FACTO_NTFY_TOKEN` if the server needs one) to send ntfy pushes for `node.offline`, `node.online` and denied `node.enrol` entries. Rules live in `apps/api/src/notifications/rules.ts`; each send logs `notification.send` (`read`). See `docs/runbooks/notifications.md`.
+
 ## Naming
 
 The project is **Factotum**; **Facto** is the calling name used in conversation and UI copy. The CLI binary is `factotum`, with an optional `facto` alias. The unscoped npm names `factotum` and `facto` are taken, so published packages use a scope. Prefer a short neutral prefix over hard-coding the name in identifiers. See [ADR-008](docs/adr/008-project-name.md) and `docs/naming.md`.

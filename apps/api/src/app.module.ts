@@ -10,6 +10,7 @@ import { HealthController } from './health.controller.js';
 import { NodesController } from './nodes/nodes.controller.js';
 import { NodeStatusMonitor } from './nodes/node-status.monitor.js';
 import { NodesService } from './nodes/nodes.service.js';
+import { NotifierService } from './notifications/notifier.service.js';
 
 // Global so feature modules (adapters) can use the pool, config and activity log.
 @Global()
@@ -22,6 +23,7 @@ import { NodesService } from './nodes/nodes.service.js';
     ActivityService,
     NodesService,
     NodeStatusMonitor,
+    NotifierService,
     AdminGuard,
   ],
   exports: [CONFIG, POOL, ActivityService, AdminGuard],

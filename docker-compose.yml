@@ -23,6 +23,10 @@ services:
     environment:
       FACTO_PORT: 3000
       FACTO_ADMIN_TOKEN: ${FACTO_ADMIN_TOKEN:?set FACTO_ADMIN_TOKEN in .env (at least 24 characters)}
+      # Optional ntfy notifications (LT-16). Empty means off.
+      FACTO_NTFY_URL: ${FACTO_NTFY_URL:-}
+      FACTO_NTFY_TOPIC: ${FACTO_NTFY_TOPIC:-}
+      FACTO_NTFY_TOKEN: ${FACTO_NTFY_TOKEN:-}
       FACTO_DATABASE_URL: postgres://${POSTGRES_USER:-facto}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-facto}
     ports:
       # Private by default: bound to one address. Set FACTO_BIND_ADDR to a Tailscale IP to reach it from other machines.
