@@ -53,6 +53,8 @@ Status: done on branch `lt-5b-inventory-sdk`. Migration is `004_inventory.sql`; 
 
 Status: built on branch `lt-7-trello-adapter` (`adapters/trello`), read-only, tested against a mock Trello server and the real API. **Live check against trello.com is pending the owner**: follow [the runbook](../runbooks/trello-adapter.md) and record the result here.
 
+> LT-8 status (2026-11-27): built (`adapters/jira`, runbook `docs/runbooks/jira-adapter.md`), tested against a mock Jira and the real API. Live check against a real Jira site is pending the owner (needs site URL, email, API token, project keys).
+
 ## Suggested order
 
 1. LT-1, LT-2, LT-3.
