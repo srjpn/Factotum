@@ -62,3 +62,22 @@ describe('container item', () => {
     expect(INVENTORY_KINDS.container.parse({ ...c, env: ['A=1'] })).not.toHaveProperty('env');
   });
 });
+
+describe('backup and service items', () => {
+  it('backup is a known kind and strips unknown fields', () => {
+    const b = { externalId: 'timemachine', title: 'Time Machine', status: 'ok', statusLabel: 'fine', running: false, destinationReachable: true, source: 'tmutil' };
+    expect(isInventoryKind('backup')).toBe(true);
+    expect(INVENTORY_KINDS.backup.safeParse(b).success).toBe(true);
+    expect(INVENTORY_KINDS.backup.safeParse({ ...b, status: 'bad' }).success).toBe(false);
+    expect(INVENTORY_KINDS.backup.parse({ ...b, path: '/Volumes/x' })).not.toHaveProperty('path');
+  });
+  it('service is a known kind, bounds the port and strips args and env', () => {
+    const s = { externalId: 'tcp:3000', title: 'node', status: 'listening', statusLabel: 'x', port: 3000, process: 'node', bind: 'localhost', source: 'lsof' };
+    expect(isInventoryKind('service')).toBe(true);
+    expect(INVENTORY_KINDS.service.safeParse(s).success).toBe(true);
+    expect(INVENTORY_KINDS.service.safeParse({ ...s, port: 70000 }).success).toBe(false);
+    const parsed = INVENTORY_KINDS.service.parse({ ...s, args: ['--token', 'x'], env: ['A=1'] });
+    expect(parsed).not.toHaveProperty('args');
+    expect(parsed).not.toHaveProperty('env');
+  });
+});
