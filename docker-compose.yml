@@ -22,6 +22,7 @@ services:
       dockerfile: apps/api/Dockerfile
     environment:
       FACTO_PORT: 3000
+      FACTO_ADMIN_TOKEN: ${FACTO_ADMIN_TOKEN:?set FACTO_ADMIN_TOKEN in .env (at least 24 characters)}
       FACTO_DATABASE_URL: postgres://${POSTGRES_USER:-facto}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-facto}
     ports:
       # Private by default: bound to one address. Set FACTO_BIND_ADDR to a Tailscale IP to reach it from other machines.

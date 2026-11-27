@@ -54,10 +54,23 @@ pnpm workspace (`apps/api`, `apps/node-agent`, `packages/contracts`). Node 22 or
 | Typecheck | `pnpm typecheck` |
 | Test | `pnpm test` |
 | Build | `pnpm build` |
-| Run the stack | `cp .env.example .env`, set `POSTGRES_PASSWORD`, then `docker compose up --build` |
+| Integration tests | `docker run --rm -d -p 55432:5432 -e POSTGRES_PASSWORD=test postgres:17-alpine`, then `FACTO_TEST_DATABASE_URL=postgres://postgres:test@localhost:55432/postgres pnpm test` (skipped when unset; each run uses its own schema) |
+| Run the stack | `cp .env.example .env`, set `POSTGRES_PASSWORD` and `FACTO_ADMIN_TOKEN`, then `docker compose up --build` |
 | Multi-arch image check | `docker buildx build --platform linux/amd64,linux/arm64 -f apps/api/Dockerfile .` |
 
-Settings come only from environment variables (`FACTO_*`, `POSTGRES_*`). The API and the node agent have no default control plane address.
+Settings come only from environment variables (`FACTO_*`, `POSTGRES_*`). The API and the node agent have no default control plane address. The API applies the SQL files in `apps/api/migrations/` on start.
+
+API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (interim, replaced by login in LT-6); node routes use the per-node credential.
+
+| Route | Auth | Purpose |
+| --- | --- | --- |
+| `POST /nodes/enrolment-tokens` | owner | Create a one-time token for a node name (`privileged`) |
+| `POST /nodes/enrol` | token in body | Exchange the token for a per-node credential (`privileged`) |
+| `POST /nodes/heartbeat` | node | Send metrics; 204, or 401 for an unknown or revoked credential |
+| `GET /nodes`, `POST /nodes/:id/revoke` | owner | List nodes; revoke one (`destructive`) |
+| `GET /activity` | owner | Read the append-only activity log |
+
+Heartbeats are telemetry and are not logged one by one; state changes are logged where they are detected (offline detection arrives in LT-4).
 
 ## Naming
 
