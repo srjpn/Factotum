@@ -1,0 +1,35 @@
+# Control plane stack. All settings come from the environment (see .env.example).
+# Nothing is stored on the host outside the named volume, so the stack can move to another machine.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-facto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-facto}
+    volumes:
+      - facto-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      FACTO_PORT: 3000
+      FACTO_DATABASE_URL: postgres://${POSTGRES_USER:-facto}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-facto}
+    ports:
+      # Private by default: bound to one address. Set FACTO_BIND_ADDR to a Tailscale IP to reach it from other machines.
+      - "${FACTO_BIND_ADDR:-127.0.0.1}:${FACTO_HOST_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  facto-db:

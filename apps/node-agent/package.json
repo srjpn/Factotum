@@ -1,0 +1,16 @@
+{
+  "name": "@facto/node-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@facto/contracts": "workspace:*",
+    "zod": "^4.6.7"
+  }
+}

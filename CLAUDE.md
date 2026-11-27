@@ -45,7 +45,19 @@ TypeScript throughout. Next.js for the dashboard, NestJS for the control plane, 
 
 ## Commands
 
-None yet. The repository is docs-only. When code lands, list install, dev, test and lint commands here.
+pnpm workspace (`apps/api`, `apps/node-agent`, `packages/contracts`). Node 22 or newer, pnpm 10.
+
+| Task | Command |
+| --- | --- |
+| Install | `pnpm install` |
+| Lint | `pnpm lint` |
+| Typecheck | `pnpm typecheck` |
+| Test | `pnpm test` |
+| Build | `pnpm build` |
+| Run the stack | `cp .env.example .env`, set `POSTGRES_PASSWORD`, then `docker compose up --build` |
+| Multi-arch image check | `docker buildx build --platform linux/amd64,linux/arm64 -f apps/api/Dockerfile .` |
+
+Settings come only from environment variables (`FACTO_*`, `POSTGRES_*`). The API and the node agent have no default control plane address.
 
 ## Naming
 
