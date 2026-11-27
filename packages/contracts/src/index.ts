@@ -4,3 +4,4 @@ export * from './activity.js';
 export * from './node.js';
 export * from './adapter.js';
 export * from './inventory.js';
+export * from './approval.js';

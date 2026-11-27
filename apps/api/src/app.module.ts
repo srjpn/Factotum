@@ -6,6 +6,7 @@ import { AdminGuard, CONFIG } from './auth/admin.guard.js';
 import { loadConfig, type Config } from './config.js';
 import { createPool, POOL } from './db/db.js';
 import { InventoryModule } from './inventory/inventory.module.js'; // LT-5b
+import { ApprovalsModule } from './approvals/approvals.module.js'; // LT-11
 import { HealthController } from './health.controller.js';
 import { NodesController } from './nodes/nodes.controller.js';
 import { NodeStatusMonitor } from './nodes/node-status.monitor.js';
@@ -15,7 +16,7 @@ import { NotifierService } from './notifications/notifier.service.js';
 // Global so feature modules (adapters) can use the pool, config and activity log.
 @Global()
 @Module({
-  imports: [AdaptersModule, InventoryModule], // LT-5 adapter registry, LT-5b inventory
+  imports: [AdaptersModule, InventoryModule, ApprovalsModule], // LT-5 adapters, LT-5b inventory, LT-11 approvals
   controllers: [HealthController, NodesController, ActivityController],
   providers: [
     { provide: CONFIG, useFactory: () => loadConfig() },
