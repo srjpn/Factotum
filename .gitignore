@@ -21,3 +21,5 @@ secrets.dec.*
 # copied from schemas/ by packages/contracts/scripts/sync-schema.mjs
 packages/contracts/src/adapter-manifest.schema.json
 *.state.json
+next-env.d.ts
+*.tsbuildinfo
