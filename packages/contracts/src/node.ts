@@ -38,9 +38,14 @@ export const EnrolResponseSchema = z.object({
 });
 export type EnrolResponse = z.infer<typeof EnrolResponseSchema>;
 
+// pending: enrolled but no heartbeat yet. offline: no heartbeat within the configured window.
+export const NodeStatusSchema = z.enum(['pending', 'online', 'offline', 'revoked']);
+export type NodeStatus = z.infer<typeof NodeStatusSchema>;
+
 export const NodeSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  status: NodeStatusSchema,
   createdAt: z.string(),
   lastHeartbeatAt: z.string().nullable(),
   lastMetrics: HeartbeatSchema.nullable(),

@@ -8,8 +8,11 @@ import type {
   Node,
 } from '@facto/contracts';
 import { ActivityService } from '../activity/activity.service.js';
+import { CONFIG } from '../auth/admin.guard.js';
+import type { Config } from '../config.js';
 import { POOL } from '../db/db.js';
 import { generateSecret, hashSecret } from '../secrets.js';
+import { computeStatus } from './status.js';
 
 type NodeRow = {
   id: string;
@@ -27,6 +30,7 @@ export class NodesService {
   constructor(
     @Inject(POOL) private readonly pool: pg.Pool,
     @Inject(ActivityService) private readonly activity: ActivityService,
+    @Inject(CONFIG) private readonly config: Config,
   ) {}
 
   async createEnrolmentToken(req: CreateEnrolmentTokenRequest): Promise<EnrolmentTokenResponse> {
@@ -132,9 +136,15 @@ export class NodesService {
 
   async list(): Promise<Node[]> {
     const { rows } = await this.pool.query<NodeRow>('SELECT * FROM nodes ORDER BY created_at');
+    const now = new Date();
     return rows.map((r) => ({
       id: r.id,
       name: r.name,
+      status: computeStatus(
+        { revokedAt: r.revoked_at, lastHeartbeatAt: r.last_heartbeat_at },
+        now,
+        this.config.offlineAfterSeconds,
+      ),
       createdAt: r.created_at.toISOString(),
       lastHeartbeatAt: r.last_heartbeat_at?.toISOString() ?? null,
       lastMetrics: r.last_metrics,

@@ -12,7 +12,13 @@ describe('loadConfig', () => {
       port: 4000,
       databaseUrl: base.FACTO_DATABASE_URL,
       adminToken: base.FACTO_ADMIN_TOKEN,
+      offlineAfterSeconds: 90,
+      statusCheckSeconds: 15,
     });
+  });
+
+  it('keeps the offline window inside the 2 minute rule', () => {
+    expect(() => loadConfig({ ...base, FACTO_OFFLINE_AFTER_SECONDS: '300' })).toThrow();
   });
 
   it('defaults the port', () => {

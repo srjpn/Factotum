@@ -70,7 +70,7 @@ API (LT-3). Owner routes need `Authorization: Bearer $FACTO_ADMIN_TOKEN` (interi
 | `GET /nodes`, `POST /nodes/:id/revoke` | owner | List nodes; revoke one (`destructive`) |
 | `GET /activity` | owner | Read the append-only activity log |
 
-Heartbeats are telemetry and are not logged one by one; state changes are logged where they are detected (offline detection arrives in LT-4).
+Heartbeats are telemetry and are not logged one by one; state changes are logged where they are detected. A monitor checks every `FACTO_STATUS_CHECK_SECONDS` (default 15) and logs `node.online` and `node.offline` once per change. A node is offline after `FACTO_OFFLINE_AFTER_SECONDS` (default 90, maximum 110) without a heartbeat. `GET /nodes` returns a live `status` of `pending`, `online`, `offline` or `revoked`.
 
 ## Naming
 

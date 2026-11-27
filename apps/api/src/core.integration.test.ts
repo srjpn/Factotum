@@ -7,6 +7,7 @@ import { AppModule } from './app.module.js';
 import { CONFIG } from './auth/admin.guard.js';
 import { createPool, POOL } from './db/db.js';
 import { runMigrations } from './db/migrate.js';
+import { NodeStatusMonitor } from './nodes/node-status.monitor.js';
 
 // Runs against a real Postgres. Set FACTO_TEST_DATABASE_URL to enable, for example:
 //   docker run --rm -d -p 55432:5432 -e POSTGRES_PASSWORD=test postgres:17-alpine
@@ -60,7 +61,7 @@ describe.skipIf(!url)('core API (nodes, enrolment, activity log)', () => {
     await runMigrations(pool);
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(CONFIG)
-      .useValue({ port: 0, databaseUrl: url!, adminToken: ADMIN })
+      .useValue({ port: 0, databaseUrl: url!, adminToken: ADMIN, offlineAfterSeconds: 90, statusCheckSeconds: 0 })
       .overrideProvider(POOL)
       .useValue(pool)
       .compile();
@@ -147,6 +148,34 @@ describe.skipIf(!url)('core API (nodes, enrolment, activity log)', () => {
     const text = JSON.stringify(log.json);
     expect(text).not.toContain(node.credential);
     expect(text).not.toContain(node.enrolmentToken);
+  });
+
+  it('marks a silent node offline and online again, logging each change once', async () => {
+    const monitor = app.get(NodeStatusMonitor);
+    const node = await enrolNode('laptop-s');
+    const statusOf = async () =>
+      (await call('GET', '/nodes', { token: ADMIN })).json.find((n: { id: string }) => n.id === node.nodeId).status;
+    const changes = async () =>
+      (await call('GET', '/activity?limit=500', { token: ADMIN })).json
+        .filter((e: { targetId: string; actorId: string }) => e.targetId === node.nodeId && e.actorId === 'node-status-monitor')
+        .map((e: { action: string }) => e.action)
+        .reverse();
+
+    expect(await statusOf()).toBe('pending');
+    await call('POST', '/nodes/heartbeat', { token: node.credential, body: heartbeat });
+    expect(await statusOf()).toBe('online');
+    await monitor.check();
+
+    await pool.query("UPDATE nodes SET last_heartbeat_at = now() - interval '3 minutes' WHERE id = $1", [node.nodeId]);
+    expect(await statusOf()).toBe('offline');
+    await monitor.check();
+    await monitor.check();
+
+    await call('POST', '/nodes/heartbeat', { token: node.credential, body: heartbeat });
+    expect(await statusOf()).toBe('online');
+    await monitor.check();
+
+    expect(await changes()).toEqual(['node.online', 'node.offline', 'node.online']);
   });
 
   it('makes the activity log append-only', async () => {

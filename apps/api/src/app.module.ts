@@ -6,6 +6,7 @@ import { loadConfig, type Config } from './config.js';
 import { createPool, POOL } from './db/db.js';
 import { HealthController } from './health.controller.js';
 import { NodesController } from './nodes/nodes.controller.js';
+import { NodeStatusMonitor } from './nodes/node-status.monitor.js';
 import { NodesService } from './nodes/nodes.service.js';
 
 @Module({
@@ -15,6 +16,7 @@ import { NodesService } from './nodes/nodes.service.js';
     { provide: POOL, inject: [CONFIG], useFactory: (config: Config) => createPool(config.databaseUrl) },
     ActivityService,
     NodesService,
+    NodeStatusMonitor,
     AdminGuard,
   ],
 })
