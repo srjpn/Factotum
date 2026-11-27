@@ -14,7 +14,7 @@ The agent (`apps/node-agent`) enrols once with a one-time token, then sends a he
 
 ## First run
 
-1. Create an enrolment token for the node through the API (`POST /nodes/enrolment-tokens`, LT-3).
+1. Create an enrolment token for the node through the API (`POST /nodes/enrolment-tokens` with the owner bearer token).
 2. Build and start:
 
 ```bash
